@@ -1,0 +1,155 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lerobot-align"
+version = "0.1.0"
+description = "Steerable multimodal annotation, alignment, and calibration pipeline for LeRobot datasets"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+authors = [{ name = "lerobot-align contributors" }]
+keywords = [
+    "robotics",
+    "lerobot",
+    "vlm",
+    "annotation",
+    "dataset",
+    "segmentation",
+    "temporal-alignment",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    # The language-column, recipe, dataset I/O, and Jobs APIs used by this
+    # package are available together from LeRobot 0.6.1 onward. Keep an upper
+    # bound while those APIs are still internal to LeRobot.
+    "lerobot[dataset]>=0.6.1,<0.7.0",
+    "openai>=2.0,<3.0",
+    "huggingface-hub>=1.6.0,<2.0.0",
+    "torch>=2.7,<2.12.0",
+    "numpy>=2.0.0,<2.3.0",
+    "pillow>=10.0.0,<13.0.0",
+    "av>=15.0.0,<16.0.0",
+    "pyarrow>=21.0.0,<30.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "datasets>=4.8.0,<5.0.0",
+]
+
+[project.optional-dependencies]
+serve = [
+    "transformers[serving]>=5.5.3,<5.6.0",
+]
+viz = [
+    "matplotlib>=3.10.3,<4.0.0",
+]
+# Only the study under evaluation/ needs these; nothing under
+# src/lerobot_align/ imports them, so they stay out of `dependencies`.
+#   pyyaml               evaluation/scripts/*.py and tests/test_unified_alignment_study.py
+#   scipy                evaluation/scripts/experiment_corpus_b_calibration.py (module level)
+#   sentence-transformers evaluation/metrics/semantic.py (EmbeddingMatcher, lazy import)
+#   matplotlib           evaluation/scripts/report_corpus_b_experiments.py
+# scikit-learn is not imported directly anywhere; it arrives as a
+# sentence-transformers dependency, so it is not declared here.
+# sentence-transformers is floored at 6.0 because earlier releases require
+# transformers<5, which contradicts the `serve`/`dev` pin of transformers 5.5.x.
+eval = [
+    "pyyaml>=6.0,<7.0",
+    "scipy>=1.11,<2.0",
+    "sentence-transformers>=6.0,<7.0",
+    "matplotlib>=3.10.3,<4.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov",
+    "ruff>=0.4.0",
+    "transformers[serving]>=5.5.3,<5.6.0",
+    "matplotlib>=3.10.3,<4.0.0",
+    # The evaluation harness tests run in CI too, so `dev` must be a
+    # superset of `eval`.
+    "lerobot-align[eval]",
+]
+
+[project.scripts]
+lerobot-align = "lerobot_align.cli:main"
+lerobot-align-recover = "lerobot_align.transaction:main"
+lerobot-align-fit = "lerobot_align.diagnostics.fit_align_calibration:main"
+lerobot-align-eval = "lerobot_align.diagnostics.eval_align:main"
+lerobot-align-eval-batch = "lerobot_align.diagnostics.eval_align_batch:main"
+lerobot-motion-viz = "lerobot_align.cli:motion_viz_main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lerobot_align"]
+
+# Include the evaluation code required by the source test suites, but no
+# research result artifacts or source annotations. Spell the contents out
+# rather than inheriting hatchling's VCS-ignore defaults: its pattern engine
+# does not honour the nested `evaluation/.gitignore` re-includes the way git
+# does, so the fallback both dropped tracked result files and swept in
+# untracked working-tree scratch.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/CONTRIBUTING.md",
+    "/CHANGELOG.md",
+    "/CITATION.cff",
+    "/ANNOTATION_PIPELINE.md",
+    "/DEPENDENCY_SECURITY.md",
+    "/release",
+    "/uv.lock",
+    "/evaluation/metrics",
+    "/evaluation/scripts",
+    "/evaluation/configs",
+    "/evaluation/REPRODUCING.md",
+    "/evaluation/RELEASE_DATA.md",
+    "/evaluation/calibration_protocol.md",
+    "/evaluation/release_artifact_inventory.json",
+    "/scripts/start_qwen38.sh",
+    "/scripts/start_qwen38_flashnext.sh",
+    "/scripts/run_generate_batch.sh",
+    "/scripts/run_import_batch.sh",
+    "/scripts/check_distributions.sh",
+    "/scripts/export_release.py",
+    "/scripts/README.md",
+    "/pyproject.toml",
+]
+exclude = [
+    "**/__pycache__",
+    "**/*.pyc",
+    "/evaluation/results",
+    "/scripts/run_annotate.sh",
+    "/scripts/run_cmd.sh",
+    "/scripts/start_qwen35.sh",
+    "/scripts/download_qwen35_397b.sh",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Start with a stable correctness-oriented baseline. Broader style rules can
+# be enabled incrementally once the extracted code has been normalized.
+select = ["E4", "E7", "E9", "F", "B", "UP", "C4", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# This executable validates optional imports before loading the package.
+"tests/run_e2e_smoke.py" = ["E402"]
+
+[tool.pytest.ini_options]
+# A bare `pytest` runs the fast unit lane only. The 104 harness tests under
+# evaluation/ are slower and are run by their own CI step
+# (`uv run pytest -q evaluation`); run them locally the same way.
+testpaths = ["tests"]

@@ -1,0 +1,548 @@
+# Study 2 arms: FIXED-LABEL SUBTASK ALIGNMENT.
+#
+# The caller supplies an ordered label list L and the VLM decides only WHEN each
+# label happens. See alignment_plan.md §4 for the task and §5.2 for this table.
+#
+# WHY A SECOND ARMS FILE. `arms.yaml` contains zero fixed-label arms -- every arm
+# there lets the model invent its own labels -- so `run_arm.py` exits
+# "unknown arm" on the first alignment job (alignment_plan.md §10.2, the largest
+# omission from that plan's first draft). This file is that study's grid. It is
+# deliberately a separate file rather than more rows in `arms.yaml`: the two
+# studies score different predictions with different metrics under different
+# contrast families, and one 36-arm file read by two aggregators with two sets of
+# rules is exactly how a contrast ends up computed under the wrong one.
+#
+# WHY THERE IS NO UPSTREAM COLUMN. Upstream `lerobot-annotate` has no fixed-label
+# mode at all -- verified five ways against the pinned v0.6.1 install (§5.3):
+# `subtasks_path` appears zero times, no config field accepts supplied labels,
+# the CLI rejects the flag rather than defaulting to it, and no alignment prompt
+# exists. So this grid compares CONFIGURATIONS OF ONE TOOL. Tool-versus-tool is
+# Study 1's job, on the generation path the two tools share. `upstream_counterparts:
+# false` below says this in machine-readable form: `preflight.check_grid` derives
+# an expected `baseline_upstream__<profile>__<camera>` for every arm carrying a
+# profile, and no such arm exists here or ever will.
+#
+# HOW TO AGGREGATE THIS FILE. With `configs/alignment_contrasts.yaml`, never with
+# aggregate.py's cell mapping: no baseline can be derived from a cell here, and
+# the eight legal contrasts are enumerated in the contrasts file. Nothing else is
+# reported as a hypothesis test (§8).
+#
+# `profile` AND `camera` ARE NOT FREE-FORM LABELS. aggregate.py's D12 gate judges
+# equalisation for the PAIR: it diffs the two arms' metadata and flags, maps each
+# differing setting to a dimension through `DIMENSION_SETTINGS`, and REFUSES the
+# contrast if anything differs that the contrast does not declare as under test.
+# `profile` maps to `frame_budget` and `camera` maps to `cameras` there. So
+# `profile` varies only with `max_frames_per_prompt` (b60 / b300) and `camera`
+# only with the view set (wrist / stack2). An earlier draft of this file used
+# descriptive profiles -- sheet300, video300, video300cal -- and every one of them
+# would have made contrasts 1, 3 and 4 differ on `frame_budget` while their actual
+# budgets were identical, refusing three contrasts including both halves of A3
+# for a difference that existed only in the name.
+#
+#
+# ONE DIMENSION AT A TIME, AND THE ARITHMETIC THAT MAKES THAT TRUE
+# ----------------------------------------------------------------
+# Every arm below carries an identical equalisation block (§7.1: same seed,
+# temperature, max_new_tokens, enable_thinking:false, same replica pool,
+# interjections and VQA off) and differs from its contrast partner in exactly one
+# field. The frame budget is where that claim is easy to get wrong, so it is
+# stated explicitly on every arm rather than inherited:
+#
+#   align_default      contact_sheet   max_frames_per_prompt  60   <- SHIPPED DEFAULT
+#   align_sheet_300    contact_sheet   max_frames_per_prompt 300
+#   align_video        video           max_frames_per_prompt 300
+#   align_video_stack  video           max_frames_per_prompt 300
+#
+# Contrast 1 (video vs sheet_300) claims to isolate FRAME FORMAT. It only does so
+# if both sides see the same frames. Leaving `max_frames_per_prompt` unstated on
+# the video arms would let them inherit the shipped 60 and silently confound
+# format with budget -- the contrast would measure both and be reported as one.
+#
+# The budget arithmetic, checked against the real corpus rather than assumed
+# (`_align_sample_timestamps`, plan_subtasks_memory.py:2193): alignment is ONE
+# call for the whole episode, sampling n = round(duration * frames_per_second) + 1
+# timestamps, capped at max_frames_per_prompt // camera_count. Measured over the
+# 797 SCORED Corpus A episodes -- the ones carrying ground truth, from
+# meta/episodes/*.parquet lengths rather than from span extents -- the episode
+# extent is min 26.9s, median 53.6s, max 104.8s. So at fps 2.0
+#
+#   * the 60-frame cap binds on 793/797 episodes (99.5%): the median episode
+#     wants 108 frames and gets 60. That is what makes contrast 5 a real budget
+#     contrast rather than a nominal one;
+#   * the 300-frame cap binds on 0/797 -- the longest scored episode wants 211.
+#
+# (Two Corpus A episodes carry no ground truth and are never scored; the longer
+# of them runs 236.1s and would hit the 300 cap. It cannot enter a contrast, but
+# the arithmetic above is stated for the scored population, not for the repos.)
+#
+# Contrast 1 is therefore not merely budget-matched in configuration, it is
+# frame-identical in fact: align_sheet_300 and align_video sample the very same
+# timestamp grid on every episode, and differ only in whether those frames arrive
+# as timestamped JPEG grids or as a native clip.
+#
+# Stacking is budget-neutral by construction on the video path and only there:
+# `_align_given_subtasks` sets budget_cameras = 1 when the format is `video`
+# (the views are stacked inside each frame, so cost scales with pixels, not with
+# timeline length) and len(camera_keys) when it is `contact_sheet` (views are
+# separate tiles and share the budget). So align_video and align_video_stack also
+# sample identical grids, and contrast 2 isolates the second view alone. A
+# stacked CONTACT-SHEET arm would instead have halved its cap to 150, which binds
+# on 20.6% of scored episodes -- so it would have been a stacking contrast
+# confounded with a budget cut on a fifth of the corpus. That is one reason no
+# such arm is in this design.
+#
+#
+# CAMERA CHOICE
+# -------------
+# Single-camera arms use `observation.images.wrist`; the stacked arms use
+# `[wrist, right]`, matching the configuration behind the 83.79% prior result and
+# `align_video_realign__*__stack2` in arms.yaml. The single-camera view is one of
+# the two in the stack on purpose: contrast 2 then reads as "what does adding the
+# second view buy", not as "wrist versus some other pair". All 16 Corpus A
+# components expose both keys (verified against every meta/info.json), so no arm
+# silently degrades to a different view.
+#
+# `vlm.camera_key` is set on the stacked arms too. It is the fallback
+# `_align_camera_keys` returns if the configured list resolves to nothing, so
+# setting it makes the failure mode a single wrist view rather than a
+# provider-default view that varies by dataset.
+#
+#
+# EQUALISED: TRUE FOR ALL SIX, INCLUDING THE STACKED ARMS
+# ------------------------------------------------------
+# In `arms.yaml` `equalised: false` means "upstream reads one camera and has no
+# counterpart at this camera set, so this arm supports no tool-versus-tool
+# contrast". That meaning does not transfer: there is no upstream arm here at all,
+# and `equalised` in this study means what §7.1 says -- every arm receives
+# byte-identical settings except in the dimension under test. All six qualify.
+#
+# This matters because `contrast_policy` refuses any contrast touching an arm
+# marked `equalised: false` unless `--allow-unequalised` is passed, and
+# `align_video_stack_cal` is the numerator of contrasts 4 and 6. Carrying the
+# generation study's marking over would have excluded the primary claims by
+# default and invited an override flag -- which is the exact mechanism by which
+# the previous study's C4 was forced through a gate and then withdrawn (§1.2).
+# Declaring the truth here is the fix; no override is needed and none should be
+# used. (This is the config half of defect D12; the aggregate.py half is to scope
+# its equalisation gate to the dimension under test.)
+#
+#
+# subtask_align_min_fraction: 0.0 -- A DELIBERATE, RECORDED DEVIATION
+# -------------------------------------------------------------------
+# Production defaults this to 0.5, and `align_default` is otherwise the shipped
+# default verbatim. It is set to 0.0 on every arm, including that one, because
+# the shipped value makes the study's own primary metric unmeasurable.
+#
+# `_check_align_coverage` RAISES `AlignmentCoverageError` when fewer than
+# `min_fraction` of the labels are placed. On the fixed-label path that exception
+# is not caught anywhere (the only handler, at plan_subtasks_memory.py:1466, is
+# on the generated-label realign path), so it aborts the whole CLI invocation --
+# which here is one entire (dataset, arm) job. One episode below 50% placement
+# would cost all ~40 episodes of that component for that arm, collapsing the
+# paired population that every contrast is computed on.
+#
+# `placed_fraction` is a PRIMARY metric (§6.1: the honest decomposition is B@k
+# plus the drop rate itself). An instrument that aborts whenever the quantity it
+# measures is low cannot measure it: at 0.5 the metric is censored below 0.5 by
+# construction, and the surviving episodes are the easy ones -- precisely the
+# conditioning error §2.1(b) identifies in the prior sweep, and precisely the
+# abort-policy artefact that Study 1's headline reliability gap turned out to be
+# (analysis/failure_investigation.md).
+#
+# The gate is therefore RECORDED, NOT OBEYED -- the same policy §7.2 already
+# adopts for the calibration fitter's `--min-gain` refusal, and for the same
+# reason. Its verdict is recovered exactly from the metric: an episode with
+# `placed_fraction < 0.5` is one the shipped default would have aborted on, and
+# that rate is reported per arm. Nothing is lost except the abort.
+#
+# Two further benefits: it satisfies §7.5 ("failures are data: an episode that
+# produces no spans scores as a failure, it is not dropped"), and it removes the
+# §7.2a fit/serve skew for this field entirely -- the offline fitting drivers
+# hard-set `subtask_align_min_fraction=0.0` (eval_align.py:143,
+# eval_align_batch.py:153; defect D8), so fit and score now agree here rather
+# than needing the documented exception.
+#
+# Stage A gate 5 (§7.4) asks that the value be within [0, 1] -- explicitly NOT
+# (0, 1] -- and that the scoring value equal the arm's declared value. Both hold.
+# This deviation belongs in analysis/alignment_deviations.md.
+#
+#
+# FLAGS DECLARED THOUGH THEY ARE INERT ON THIS PATH
+# -------------------------------------------------
+# `subtask_describe_first` and `subtask_seeded_relabel` are skipped in fixed-label
+# mode (config.py: there is nothing to ground or relabel). `plan_max_steps`,
+# `subtask_generate_frame_format` and `subtask_realign_generated` govern the
+# generation path, which must never run here -- Stage A gate 2 asserts that every
+# eval episode resolves to a non-empty label list, because `_load_subtasks_file`
+# returns [] for an episode absent from an object-keyed file with no `default` and
+# `_subtask_spans` then silently GENERATES instead of aligning (defect D3).
+#
+# They are declared anyway, identically on all six arms and at shipped defaults,
+# so that if that assertion is ever wrong the fallthrough is the same on every arm
+# instead of being an arm-dependent confound. The contact-sheet geometry flags are
+# declared on the video arms for the same reason.
+#
+# `plan.subtask_import` is the one such flag deliberately NOT declared, and the
+# reason is a tool defect worth recording. It is `str = "off"`, mutually exclusive
+# with `subtasks_path`, so pinning it to its default would have been free
+# insurance -- except that it cannot be expressed on the command line at all.
+# draccus parses each CLI value as YAML, and YAML reads a bare `off` as boolean
+# false, so `--plan.subtask_import=off` arrives as the string "False" and does not
+# round-trip. Quoting it in this file does not help: the quotes are consumed here,
+# not there. Omitting the flag leaves the field at its correct default; declaring
+# it would have set it to "False", which is not a recognised import source. This
+# is why every flag value in this file is round-trip checked against the tool's
+# own config class rather than merely checked for a valid field name -- the check
+# is what found it.
+#
+# `subtask_video_fallback: error` makes native video a hard contract. It is inert
+# on the contact-sheet arms (it fires only for a stage explicitly configured as
+# `video`) and load-bearing on the four video arms: the default is to fall back to
+# contact sheets, which would turn contrast 1 into a comparison of an arm against
+# itself while every log still read as configured. It is declared on all six.
+#
+# `uses_video: true` on every arm means "reads the episode's video frames", as it
+# does in arms.yaml -- NOT "sends a native video block". That distinction is
+# `plan.subtask_align_frame_format`, and it is the whole of contrast 1; do not
+# read `uses_video` as the format.
+#
+#
+# PLACEHOLDERS
+# ------------
+# `run_arm.py` replaces a flag value equal to '{subtasks_path}' with
+# `--subtasks-path` and '{calibration_path}' with `--calibration-path`. Both are
+# resolved per component by the runner. Every arm consumes a label file (that is
+# the study); only the two calibrated arms consume a calibration file.
+#
+# `calibration_fit_arm` is not read by `run_arm.py`. It names the arm whose
+# configuration the calibration file must be fit under, so §7.2a's requirement --
+# that the fit and the score come from the SAME configuration, `min_fraction`
+# excepted -- is data the runner can act on and preflight can check field by
+# field, rather than a paragraph someone has to remember. It is why §9 budgets two
+# calibration fits per component and not one: single-view and stacked video are
+# different regimes and each calibrated arm needs its own fit.
+#
+# The cache key must hash the label file's CONTENTS, not its path (defect D1).
+# Arms here differ by label file, label files are regenerated routinely, and
+# path-keying serves predictions made against the old labels.
+
+study: alignment
+upstream_counterparts: false
+
+arms:
+- name: align_default
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b60
+  camera: wrist
+  base_arm: align_fixed_label
+  description: 'THE SHIPPED DEFAULT: fixed-label alignment exactly as a user gets it today without
+    reading the handoff -- contact sheets, one camera, no calibration, the default 60-frame budget
+    (subtask_align_frame_format defaults to contact_sheet, max_frames_per_prompt to 60, calibration
+    to None). The 60-frame cap binds on 99.5% of Corpus A episodes, so this arm sees roughly half
+    the frames every other arm sees. Baseline of contrasts 5 and 6; the reference point for claim
+    A4, whether the shipped defaults leave a large measurable margin on the table.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: contact_sheet
+    plan.max_frames_per_prompt: 60
+- name: align_sheet_300
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  description: 'align_default with the frame budget raised to 300 and nothing else changed. Separates
+    "weak default budget" from "weak format" (§5.2): without it, any video-over-sheets win would be
+    read as a format effect when it could be a budget effect. Numerator of contrast 5 (budget) and
+    baseline of contrast 1 (format, budget held equal). At fps 2.0 the 300-frame cap binds on no
+    scored Corpus A episode -- the longest wants 211 -- so this arm samples the full 2 fps grid.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: contact_sheet
+    plan.max_frames_per_prompt: 300
+- name: align_video
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  description: 'Native video, one camera, no calibration. max_frames_per_prompt is stated as 300 --
+    NOT left to inherit the shipped 60 -- because contrast 1 claims to isolate frame format, and it
+    does so only if both sides use the same frame budget. Since neither 300-frame arm is capped on
+    any scored episode, align_video and align_sheet_300 sample the identical timestamp grid on all 797
+    and differ solely in whether those frames arrive as JPEG grids with the time burned in or as a
+    clip whose timestamps the model carries natively. Numerator of contrast 1 (A1) and of contrast 8
+    (does the video help at all); baseline of contrasts 2 and 3.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.max_frames_per_prompt: 300
+- name: align_video_stack
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: stack2
+  base_arm: align_fixed_label
+  description: 'Native video with the wrist and right views vertically STACKED into each frame, no
+    calibration. Identical to align_video in every other field, including the explicit 300-frame
+    budget, which on the video path is a per-timestamp budget rather than a per-view one: stacking
+    costs pixels, not timeline. So this arm and align_video see the same timestamps and contrast 2
+    isolates the second view alone -- the wrist sees contact, the external view sees approach.
+    Numerator of contrast 2 (A2); baseline of contrast 4.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.right]'
+    plan.max_frames_per_prompt: 300
+- name: align_video_cal
+  tool: align
+  supervision: labels_plus_seed
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  calibration_fit_arm: align_video
+  description: 'align_video plus the per-boundary timing calibration fit on that component''s 10 seed
+    episodes. Numerator of contrast 3 (A3, single view), which CROSSES supervision levels: this arm
+    has seen ten annotated episodes its baseline has not, so the contrast is declared cross_level in
+    alignment_contrasts.yaml and every row carries the supervision_asymmetry stamp. Calibration is
+    fit for one label tuple and applies_to demands an exact match, so on a component with mixed
+    conventions this arm is calibrated on the modal subpopulation and uncalibrated on the rest --
+    a blended treatment, which is why calibration_applied is a primary reported quantity here and
+    not a footnote (§4.2).'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_calibration_path: '{calibration_path}'
+    plan.max_frames_per_prompt: 300
+- name: align_video_stack_cal
+  tool: align
+  supervision: labels_plus_seed
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: stack2
+  base_arm: align_fixed_label
+  calibration_fit_arm: align_video_stack
+  description: 'align_video_stack plus the seed-fitted calibration -- the configuration behind the
+    83.79% tIoU / 1.51s MAE / 89.4% B@3 prior result, and the best configuration this study has.
+    Numerator of contrast 4 (A3, stacked), contrast 6 (A4, total margin over the shipped defaults)
+    and contrast 7 (A5, does the best configuration beat a model-free timing template). Its
+    calibration must be fit under align_video_stack, not align_video: a fit taken under one camera
+    set and applied under another is a silent fit/serve skew (§7.2a), which is what calibration_fit_arm
+    records.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.right]'
+    plan.subtask_align_calibration_path: '{calibration_path}'
+    plan.max_frames_per_prompt: 300
+
+# ---------------------------------------------------------------------------
+# MODEL-FREE FLOORS (§5.1). No VLM call, no GPU, no replica.
+#
+# WHY THEY ARE HERE AND NOT ONLY IN `alignment_contrasts.yaml:external_arms`.
+# Three consumers disagreed about where a floor is declared, and the study has an
+# established answer already: `arms.yaml` declares its four model-free arms
+# (`ref_single`, `ref_uniform_true`, `ref_uniform_modal`, `ref_script_prior`) as
+# ordinary `arms:` entries carrying `tool: reference`, even though
+# `reference_arms.py` and not `run_arm.py` produces them. The floors are that
+# same case, so they are declared the same way.
+#
+# `tool: reference` is what keeps the launcher off them, and it is load-bearing
+# rather than decorative: `run_all.sh:arms_matching` filters `tool != reference`,
+# `preflight.check_grid` skips them (no upstream counterpart is derived), and
+# `preflight.check_arm_flags` skips them (there is no config class to round-trip
+# a flag against). None of those three needed changing to accept these rows.
+#
+# The alternative -- leaving them only in the contrast table's `external_arms` --
+# cannot describe `floor_median_ratio`, which no §8 contrast references and which
+# therefore has no row in a file keyed by contrast. It is still produced, still
+# scored, and still appears in the per-arm descriptive table, so a reader sees a
+# number whose supervision level is recorded nowhere. `external_arms` is kept as
+# the redundant contract it says it is: `aggregate.py` refuses to run when the
+# two files disagree on `tool` or `supervision`, and `align_floors.py`
+# --arm-tables reconciles both against the metadata the floors actually emit.
+#
+# `equalised: true` is correct and not a waiver. The D12 gate asks whether two
+# arms differ on a dimension the contrast did not declare; contrasts 7 and 8
+# declare `dimension: tool`, which is exactly the VLM-versus-template difference
+# these rows exist to represent. A floor sees no camera at all, so it cannot be
+# unequalised on the camera axis the flag was introduced for.
+- name: floor_uniform
+  tool: reference
+  supervision: labels_only
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: '|L| equal parts of the episode, anchored at the EPISODE START and not at t=0.
+    Baseline of contrast 8 (claim A5): does looking at the video beat splitting the episode into
+    equal parts? The anchor is the whole point -- evaluate_alignment measures every boundary
+    error from ground_truth[0]["start"] while reference_arms._equal_split anchors at zero, and
+    where those differ the floor carries a constant per-component bias that would read as VLM
+    superiority (§5.1). One Corpus A episode is affected (u850-bag-place-02-FV-v30 episode 24
+    starts at 0.563s), which is small, silent, and 0.563s against a b_hit@1 tolerance of 1s.'
+- name: floor_median_ratio
+  tool: reference
+  supervision: labels_plus_seed
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: 'Seed set median RELATIVE boundary positions. Produced and scored but referenced
+    by no §8 contrast, so it is reported descriptively and is not in the Holm family. It is
+    declared here anyway because contrast_policy fails closed on an arm with no metadata: without
+    this row the arm appears in the per-arm table with its supervision level recorded nowhere,
+    and any future contrast naming it would be refused for missing metadata rather than for
+    anything real.'
+- name: floor_cumulative_prior
+  tool: reference
+  supervision: labels_plus_seed
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: 'Seed median SEGMENT LENGTHS, normalised to sum to 1 and accumulated: boundary k
+    at t0 + D * (sum_{i<k} f_i) / (sum_i f_i). The strongest model-free arm and the baseline of
+    contrast 7 (claim A5). Deterministic and model-free BY CONSTRUCTION rather than by hope --
+    §5.1 measured the obvious "priors-only DP" alternative still moving boundaries 0.70s apart
+    with the prior weighted 100,000x, because the medians never sum to exactly 1 and the surplus
+    is placeable anywhere at zero cost with the model silently deciding where. Stage B gate 11
+    proves the property by re-running these arms against two opposite synthetic model answers and
+    requiring byte-identical output. Its seed set is filtered by label list, as the calibration
+    fit is, because both average POSITIONAL boundaries and position 1 is a different event in
+    episodes following different conventions.'

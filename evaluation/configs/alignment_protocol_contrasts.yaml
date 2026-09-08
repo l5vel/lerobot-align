@@ -1,0 +1,149 @@
+# One contrast family for both datasets.
+study: alignment
+family: alignment_tasks_v1
+alpha: 0.05
+correction: holm
+family_scope: single
+expected_tests: 24
+metrics:
+- b_hit@3
+- placed_fraction
+- macro_temporal_iou
+secondary_metrics:
+- b_hit@1
+- b_hit@5
+- boundary_mae_placed
+- boundary_mae_norm
+- calibration_applied
+metric_directions:
+  placed_fraction: higher
+  b_hit@1: higher
+  b_hit@3: higher
+  b_hit@5: higher
+  boundary_mae_placed: lower
+  boundary_mae_norm: lower
+  macro_temporal_iou: higher
+  calibration_applied: higher
+strata:
+  headline: all_scored
+  report_separately:
+  - name: seed_count_eligible
+    note: Shared task seed-count support; identical mask for every arm, including
+      floors.
+external_arms:
+  floor_uniform:
+    tool: reference
+    supervision: labels_only
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+  floor_cumulative_prior:
+    tool: reference
+    supervision: labels_plus_seed
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+contrasts:
+- id: 1
+  dimension: frame_format
+  numerator: align_video
+  baseline: align_sheet_300
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A1
+  label: frame format, budget held equal
+  description: Video versus contact sheets with the same frame cap and sampling rate.
+    Format-specific prompt wording remains a limitation.
+- id: 2
+  dimension: cameras
+  numerator: align_video_stack
+  baseline: align_video
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A2
+  label: stacking
+  description: Add the secondary view at the same timestamp budget.
+- id: 3
+  dimension: calibration
+  numerator: align_video_cal
+  baseline: align_video
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, single view
+  report_calibration_applied: true
+  description: Single-view calibration versus its exact uncalibrated counterpart.
+    Fit from ten seeds per task and obey the recommendation gate; include all evaluation
+    trajectories.
+- id: 4
+  dimension: calibration
+  numerator: align_video_stack_cal
+  baseline: align_video_stack
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, stacked
+  report_calibration_applied: true
+  description: Stacked-view calibration versus its exact uncalibrated counterpart,
+    fitted from the same ten task seeds under stacked inference settings.
+- id: 5
+  dimension: frame_budget
+  numerator: align_sheet_300
+  baseline: align_default
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A4
+  label: frame budget
+  description: Raise the contact-sheet frame cap from 60 to 300.
+- id: 6
+  dimension: all
+  numerator: align_video_stack_cal
+  baseline: align_default
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A4
+  label: total margin over shipped defaults
+  report_calibration_applied: true
+  description: Combined format, frame budget, second view and calibration effect.
+    This crosses supervision levels and changes several factors.
+- id: 7
+  dimension: tool
+  numerator: align_video_stack_cal
+  baseline: floor_cumulative_prior
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_plus_seed
+  cross_level: false
+  claim: A5
+  label: sanity check
+  description: Stacked calibration versus the cumulative timing prior, both using
+    the same ten task seeds and count pooling.
+- id: 8
+  dimension: tool
+  numerator: align_video
+  baseline: floor_uniform
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A5
+  label: does the video help at all
+  description: Uncalibrated video versus uniform timing, with supplied labels for
+    both.
+notes_corpus_b: 'Same 8 contrasts and the same 24-test Holm family as alignment_v1,
+  so Corpus A and Corpus B contrasts are comparable. The cluster is the TASK: Corpus
+  B is sharded into 39 components, one per RoboInter task, precisely so aggregate.py''s
+  bootstrap resamples tasks and not a single whole-corpus unit. Corpus A had 16 clusters;
+  Corpus B has 39.'

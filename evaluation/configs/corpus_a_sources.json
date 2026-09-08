@@ -1,0 +1,433 @@
+{
+  "version": 1,
+  "name": "corpus_a",
+  "cameras": {
+    "primary": "observation.images.wrist",
+    "secondary": "observation.images.right"
+  },
+  "sources": [
+    {
+      "id": "base4-clean-table-01-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-clean-table-01-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-clean-table-01-BC-FV-v30.json",
+      "task": "clean-table",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-clean-table-01-BC-FV-v30",
+        "revision": "8cbb312ef62cbcd8d759c1d84806187eb745ec6a",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "8cbb312ef62cbcd8d759c1d84806187eb745ec6a",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "0667703fb2447d7cbdf837084f544dc46edb5cfd611b1d148ca83636fc075112"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 49,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-clean-table-02-BC-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-clean-table-02-BC-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-clean-table-02-BC-v30.json",
+      "task": "clean-table",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-clean-table-02-BC-v30",
+        "revision": "93eee0af2931352e557840b61127d81e6aa21c1c",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "93eee0af2931352e557840b61127d81e6aa21c1c",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "e54e1fedeeeff12f424de178328092117aad75faf91398a286018ea166166e3b"
+        },
+        "local_historical_match": {
+          "total_episodes": 49,
+          "annotated_episodes": 49,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-clean-table-03-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-clean-table-03-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-clean-table-03-BC-FV-v30.json",
+      "task": "clean-table",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-clean-table-03-BC-FV-v30",
+        "revision": "d01efbf98211609ed0379c71ff83caa4a93363ee",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "d01efbf98211609ed0379c71ff83caa4a93363ee",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "5d6eb4269973bd2e4290b5c2528d849c663a9a9d9685da57e10fe9b5a1b25579"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-clean-table-04-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-clean-table-04-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-clean-table-04-BC-FV-v30.json",
+      "task": "clean-table",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-clean-table-04-BC-FV-v30",
+        "revision": "b5c9ee1bf9b127917ab4763592d043246a57cbb2",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "b5c9ee1bf9b127917ab4763592d043246a57cbb2",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "ee7cfd507d08be2636403e1fd5d2d5ff450a4ac588b49f9b83eec38959a1d2df"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-mobile-door-01-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-mobile-door-01-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-mobile-door-01-BC-FV-v30.json",
+      "task": "mobile-door",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-mobile-door-01-BC-FV-v30",
+        "revision": "44184b81b386edab018a3d60964e186b9bf1cb16",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "44184b81b386edab018a3d60964e186b9bf1cb16",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "961c488874d3a891a7ac4c035667c7f2c3974fe64bcf549a7cc3834ff418936f"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-mobile-door-02-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-mobile-door-02-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-mobile-door-02-BC-FV-v30.json",
+      "task": "mobile-door",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-mobile-door-02-BC-FV-v30",
+        "revision": "4c6a683616aa813bdb1d924ebc761d9c6e0d24c0",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "4c6a683616aa813bdb1d924ebc761d9c6e0d24c0",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "2ffaab21d489414e999e79c87e8ca5d2b051262f3a81ab75accc6d6a9b98962f"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "base4-mobile-door-04-BC-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/base4-mobile-door-04-BC-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/base4-mobile-door-04-BC-FV-v30.json",
+      "task": "mobile-door",
+      "upstream": {
+        "repo_id": "AmmarWaheed/base4-mobile-door-04-BC-FV-v30",
+        "revision": "7c7135ff7614f209549c066cbcf6df8192840465",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "7c7135ff7614f209549c066cbcf6df8192840465",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "fdefb8ee9e92bcf1ebe76916fe1fd91799228826cdbc61011547ad7f5c34bb87"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-bag-place-01-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-bag-place-01-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-bag-place-01-FV-v30.json",
+      "task": "bag-place",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-bag-place-01-FV-v30",
+        "revision": "27746befdf415e3a20f8e63f2f6ddc3312c4fc0b",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "27746befdf415e3a20f8e63f2f6ddc3312c4fc0b",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "427a148bab3b1d5aab7070058a8f1de2a371902e83de44b89707ef6fe889680f"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-bag-place-02-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-bag-place-02-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-bag-place-02-FV-v30.json",
+      "task": "bag-place",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-bag-place-02-FV-v30",
+        "revision": "4038e47e605bbe1286d7878be4810f52c3432761",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "4038e47e605bbe1286d7878be4810f52c3432761",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "39793bc6a169a30923818d41daf9d7829ac38c62b18a0d640fadf9a198f716ed"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-bag-place-03-BC-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-bag-place-03-BC-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-bag-place-03-BC-v30.json",
+      "task": "bag-place",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-bag-place-03-BC-v30",
+        "revision": "4de13f74a1c094586cded63921427fdf7be8fbed",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "4de13f74a1c094586cded63921427fdf7be8fbed",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "7ffee1bd74624505424e3ef931d4d2161b2b9e44ce41e1ee495f4d2797236e16"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-bag-place-04-BC-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-bag-place-04-BC-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-bag-place-04-BC-v30.json",
+      "task": "bag-place",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-bag-place-04-BC-v30",
+        "revision": "b33e0ce64178904cf882ea4adf3977d02795580f",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "b33e0ce64178904cf882ea4adf3977d02795580f",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "da910aa8a3b4c109f0cab28edf5dcaa48d4186424072b0e4f3a7aa6c2bfda913"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-fridge-drink-01-FV-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-fridge-drink-01-FV-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-fridge-drink-01-FV-v30.json",
+      "task": "fridge-drink",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-fridge-drink-01-FV-v30",
+        "revision": "89c14949d6150ffcf42de879dad3398ac82a2b4f",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "89c14949d6150ffcf42de879dad3398ac82a2b4f",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "7b26bfc809f975c2b55b3950cf997960f45680be0093c64ace3d15d9670d525a"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-fridge-drink-02-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-fridge-drink-02-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-fridge-drink-02-v30.json",
+      "task": "fridge-drink",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-fridge-drink-02-v30",
+        "revision": "b281be7ca41e08b8b14ef81f03359c11b6eb4a40",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "b281be7ca41e08b8b14ef81f03359c11b6eb4a40",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "2f4ecbfb5ff5eaa8a7db1ed50512517bbfca57966f7f7595f59dd3a1202cd6a5"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-fridge-drink-03-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-fridge-drink-03-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-fridge-drink-03-v30.json",
+      "task": "fridge-drink",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-fridge-drink-03-v30",
+        "revision": "a9de3e5a1ab9bae94f126c89f3609f46f353e5f3",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "a9de3e5a1ab9bae94f126c89f3609f46f353e5f3",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "1788cff80cc0dac2a5c6da44ba230817c808b6aebe4aae4ac4ac81841f81d600"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-fridge-drink-04-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-fridge-drink-04-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-fridge-drink-04-v30.json",
+      "task": "fridge-drink",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-fridge-drink-04-v30",
+        "revision": "819df816be9d41daf5f27f1b0f6c3a6b4a7785b2",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "819df816be9d41daf5f27f1b0f6c3a6b4a7785b2",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "c108335dd6921fdf2dce9e08520c4fa858e332dd0a567c25e37a0cf10d133a24"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 50,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    },
+    {
+      "id": "u850-fridge-drink-05-v30",
+      "root": "${ALIGN_CORPUS_A_ROOT}/u850-fridge-drink-05-v30",
+      "ground_truth": "${ALIGN_CORPUS_A_GT}/u850-fridge-drink-05-v30.json",
+      "task": "fridge-drink",
+      "upstream": {
+        "repo_id": "AmmarWaheed/u850-fridge-drink-05-v30",
+        "revision": "219e7136b780f55545de2556bdf3965a1aefed94",
+        "hub": {
+          "http_status": 200,
+          "resolved_sha": "219e7136b780f55545de2556bdf3965a1aefed94",
+          "private": false,
+          "gated": false,
+          "license_metadata": "apache-2.0"
+        },
+        "annotation_sidecar": {
+          "path": "meta/lerobot_annotations.json",
+          "sha256": "fbc30c2aac08e98b5ac4209fbbe9fb87c5423fc871c1f105260f56ce95b3d2aa"
+        },
+        "local_historical_match": {
+          "total_episodes": 50,
+          "annotated_episodes": 49,
+          "ground_truth_episodes_equal": true
+        }
+      }
+    }
+  ],
+  "reproduction_status": "source_revisions_verified_historical_artifacts_not_distributed",
+  "hub_verification": {
+    "checked_at_utc": "2026-09-08T21:50:24.561290+00:00",
+    "authentication": "none",
+    "method": "GET /api/datasets/{repo_id}/revision/{revision}",
+    "file_downloads_tested": false
+  }
+}

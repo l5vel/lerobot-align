@@ -1,0 +1,58 @@
+lerobot-align
+
+This product includes software developed as part of LeRobot
+(https://github.com/huggingface/lerobot), Copyright 2024-2026 The HuggingFace
+Inc. team, licensed under the Apache License, Version 2.0.
+
+Origin
+------
+
+This package was extracted from LeRobot's steerable annotation pipeline and
+then extended. Files that carry a "Copyright ... The HuggingFace Inc. team"
+header are derived from LeRobot and retain that notice, as the Apache License
+requires. The prompt templates under `src/lerobot_align/prompts/` that are
+shared with upstream are byte-identical to it; the evaluation study under
+`evaluation/` verifies this before every run.
+
+Work added by this project includes the given-subtask alignment path, native
+video encoding, motion-adaptive and stacked-multiview frame sampling, the
+dynamic-programming boundary calibration, the subtask import sources, and the
+evaluation harness under `evaluation/`.
+
+Third-party licenses
+--------------------
+
+The LICENSE file distributed with LeRobot additionally carries notices for
+Diffusion Policy, ACT, TDMPC and DETR. None of that code is present in this
+repository, so those notices are not reproduced here. If you vendor policy code
+from LeRobot into a derivative of this package, restore the corresponding
+notices.
+
+Evaluation data
+---------------
+
+The software license does not grant rights to third-party datasets or source
+annotations. Two historical result archives contained copied annotations and
+mixed analysis inputs. They have been removed from the release tree without
+assuming redistribution permission. The member-level hash inventory is in
+evaluation/release_artifact_inventory.json; see evaluation/RELEASE_DATA.md.
+Historical Git revisions still contain those archives and must not be published
+as part of a public release. Use a clean export with no inherited Git history.
+
+The evaluation used third-party datasets with independent terms:
+
+  - Corpus A uses 16 repositories under `AmmarWaheed` on the Hugging Face Hub.
+    Their exact revisions and source-annotation hashes are recorded in
+    evaluation/configs/corpus_a_sources.json. Their Hub card metadata declares
+    Apache-2.0; this is a report of the upstream metadata, not a determination
+    of rights in all underlying source material.
+  - Corpus B is derived from `InternRobotics/RoboInter-Data` at revision
+    0208b79c34eca4d214cdb5d07f5ae0f7cc634340. Its card declares CC BY-NC-SA 4.0
+    (non-commercial, share-alike) in its community agreement and refers readers
+    to the original RoboInter, DROID and RH20T dataset terms. It includes an
+    access-form declaration, but the Hub API reported the repository public
+    and ungated on 2026-09-08. That observation does not remove the source terms
+    or establish permission to redistribute its contents.
+
+See `evaluation/REPRODUCING.md` for details. The clean source export excludes
+historical result artifacts and engineering notes as well as Git history.

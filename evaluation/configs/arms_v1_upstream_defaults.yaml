@@ -1,0 +1,241 @@
+# Experimental arms.
+#
+# Ordering is by the supervision each arm consumes, not by expected score.
+# An arm's `supervision` field is what licenses (or forbids) comparing it
+# against another: only arms at the same supervision level form a fair
+# head-to-head. `uses_video: false` arms never see a frame and exist to
+# establish what the scripted structure of this corpus gives away for free.
+#
+# `equalised: true` marks the arms that were deliberately pinned to upstream's
+# exact frame budget, sampling rate, camera set, decoding parameters and seed,
+# so that any difference between them is attributable to mechanism rather than
+# to compute.
+
+defaults: &defaults
+  seed: 1729
+  # BOTH tools enable the interjections and VQA modules by default, and VQA
+  # emits at 1 Hz. On an 80 s episode that is hundreds of extra VLM calls
+  # against roughly six subtask calls -- about 97% of all inference spent on
+  # modules this evaluation declares out of scope. Leaving them on would inflate
+  # every runtime figure ~40x and make the cost comparison in section 6.6
+  # meaningless, while changing nothing about subtask quality. Disabled
+  # symmetrically for every arm, including the baseline.
+  interjections.enabled: false
+  vqa.enabled: false
+  # NOTE the section prefix. `--temperature` is NOT a field of either config
+  # and both CLIs reject it outright; the field is `vlm.temperature`. Every arm
+  # was unlaunchable until this was corrected.
+  vlm.temperature: 0.2
+  # Qwen3.8-27B is a reasoning model and the server runs with
+  # `--reasoning-parser qwen3`, so vLLM splits the reply: the think block goes to
+  # `reasoning_content` and the answer to `content`. Both clients read ONLY
+  # `content` (vlm_client.py:317, zero references to reasoning_content), so a
+  # response that spends its budget thinking arrives as an empty string. That was
+  # 67 of 72 failures in E1 -- the model was generating fine, into a channel
+  # nobody reads. Disabling the think block sends the whole budget to the answer.
+  vlm.chat_template_kwargs: '{"enable_thinking":false}'
+  # We host the endpoint, so the budget is bounded by the 32768 context minus the
+  # multimodal prompt, not by cost. 4096 is ~6x the measured requirement (~634
+  # completion tokens for a six-to-eight subtask reply) and leaves ample room for
+  # the contact sheets. Symmetric across every arm including the baseline.
+  vlm.max_new_tokens: 4096
+  # Pinned explicitly rather than inherited, so that a future change to either
+  # tool's defaults cannot silently un-equalise the comparison.
+  plan.frames_per_second: 2.0
+  plan.max_frames_per_prompt: 60
+  plan.contact_sheet_columns: 5
+  plan.contact_sheet_frames_per_sheet: 20
+  plan.contact_sheet_frame_width: 224
+  plan.contact_sheet_quality: 84
+  plan.min_subtask_seconds: 1.5
+  plan.plan_max_steps: 8
+  plan.subtask_describe_first: true
+  plan.subtask_seeded_relabel: false
+  # Upstream reads exactly ONE camera, the first non-depth video key, which is
+  # `observation.images.left` on this corpus, and does not divide the frame
+  # budget across views. Every equalised arm is pinned to that same camera:
+  # prior work on this repo found the wrist view strongest, so letting the new
+  # tool use wrist while the baseline uses left would score a camera choice as
+  # a mechanism gain. Arms that deliberately change the camera declare
+  # `equalised: false` and are reported as capability claims.
+  vlm.camera_key: observation.images.left
+
+arms:
+
+  # ---------------------------------------------------------------- baseline
+  - name: baseline_upstream
+    tool: upstream
+    supervision: none
+    uses_video: true
+    equalised: true
+    description: >
+      Upstream lerobot-annotate at its documented defaults. This is THE
+      baseline; every headline claim is stated relative to it.
+    flags:
+      <<: *defaults
+
+  # ------------------------------------------------- null / falsification arm
+  - name: align_defaults
+    tool: align
+    supervision: none
+    uses_video: true
+    equalised: true
+    falsification: true
+    description: >
+      lerobot-align with every new feature left at its default (all inert).
+      All 16 fields the new tool adds default to off, and only 2 of 68 shared
+      fields differ (both operational). This arm must therefore score the same
+      as baseline_upstream within decoding noise. If it does not, an unknown
+      confound exists and the whole comparison is suspect -- so this is run
+      FIRST and its result gates everything else.
+    flags:
+      <<: *defaults
+
+  # ------------------------------------------------------ mechanism arms (A)
+  - name: align_video
+    tool: align
+    supervision: none
+    uses_video: true
+    equalised: true
+    description: >
+      Native video generation instead of timestamped contact sheets. Same
+      prompt family, same frame budget, same model.
+    flags:
+      <<: *defaults
+      plan.subtask_generate_frame_format: video
+      plan.subtask_video_fallback: error
+
+  - name: align_video_realign
+    tool: align
+    supervision: none
+    uses_video: true
+    equalised: true
+    description: >
+      Video generation, then discard the provisional boundaries and re-localise
+      the generated labels over the whole episode. Consumes no external labels:
+      only the tool's own generated text crosses the stage boundary.
+    flags:
+      <<: *defaults
+      plan.subtask_generate_frame_format: video
+      plan.subtask_align_frame_format: video
+      plan.subtask_video_fallback: error
+      plan.subtask_realign_generated: true
+
+  - name: align_video_realign_wrist
+    tool: align
+    supervision: none
+    uses_video: true
+    equalised: false
+    description: >
+      As align_video_realign but reading the wrist camera instead of the left
+      camera upstream defaults to. NOT equalised: it isolates the value of the
+      CAMERA CHOICE, which is a real deployment decision but is not a mechanism
+      difference. Reported separately so the video/realign gain is never
+      confounded with it.
+    flags:
+      <<: *defaults
+      vlm.camera_key: observation.images.wrist
+      plan.subtask_generate_frame_format: video
+      plan.subtask_align_frame_format: video
+      plan.subtask_video_fallback: error
+      plan.subtask_realign_generated: true
+
+  - name: align_video_realign_multiview
+    tool: align
+    supervision: none
+    uses_video: true
+    equalised: false
+    description: >
+      As above but with synchronised camera views stacked into each video
+      frame. NOT equalised: more pixels per timestamp than the baseline sees.
+      Reported as a separate capability claim.
+    flags:
+      <<: *defaults
+      plan.subtask_generate_frame_format: video
+      plan.subtask_align_frame_format: video
+      plan.subtask_video_fallback: error
+      plan.subtask_realign_generated: true
+      # Bracket form is required. A bare comma-separated string parses into a
+      # tuple of individual CHARACTERS -- silently -- so this arm would have run
+      # as a single-camera duplicate of align_video_realign.
+      plan.subtask_align_camera_keys: "[observation.images.wrist,observation.images.right]"
+
+  # ---------------------------------------------------- supervised arms (B)
+  # Both arms in this block consume the SAME seed episodes. The calibration
+  # adapter is applied to the baseline's output too, so that the adapter
+  # itself is never the thing being measured.
+  - name: baseline_upstream_calibrated
+    tool: upstream
+    supervision: seed_calibration
+    uses_video: true
+    equalised: true
+    postprocess: dp_calibration
+    description: >
+      Upstream output passed through the same boundary-calibration adapter the
+      new tool uses, fitted on the same seed episodes. Without this arm, any
+      calibrated-vs-uncalibrated comparison would be measuring the adapter
+      rather than the tool.
+    flags:
+      <<: *defaults
+
+  - name: align_video_realign_calibrated
+    tool: align
+    supervision: seed_calibration
+    uses_video: true
+    equalised: true
+    description: >
+      The new tool's full label-free pipeline with calibration fitted on the
+      seed episodes.
+    flags:
+      <<: *defaults
+      plan.subtask_generate_frame_format: video
+      plan.subtask_align_frame_format: video
+      plan.subtask_video_fallback: error
+      plan.subtask_realign_generated: true
+      plan.subtask_align_calibration_path: "{calibration_path}"
+
+  # ------------------------------------------------- oracle arm (quarantined)
+  - name: align_oracle_labels
+    tool: align
+    supervision: oracle_labels
+    uses_video: true
+    equalised: true
+    quarantined: true
+    description: >
+      Fixed-label alignment: the human label list is SUPPLIED as input and only
+      the boundaries are predicted. This consumes ground truth and is therefore
+      NOT comparable to any other arm and NOT part of any headline claim. It is
+      reported solely as an upper bound on how well boundaries can be placed
+      when naming is solved, and to characterise a capability upstream does not
+      have at all.
+    flags:
+      <<: *defaults
+      plan.subtasks_path: "{subtasks_path}"
+      plan.subtask_align_frame_format: video
+      plan.subtask_video_fallback: error
+
+  # ------------------------------------------------ model-free references (R)
+  - name: ref_single
+    tool: reference
+    supervision: none
+    uses_video: false
+    description: One span covering the episode. The absolute floor.
+  - name: ref_uniform_true
+    tool: reference
+    supervision: oracle_count
+    uses_video: false
+    quarantined: true
+    description: Equal split into the true segment count. Oracle-count reference.
+  - name: ref_uniform_modal
+    tool: reference
+    supervision: seed_calibration
+    uses_video: false
+    description: Equal split into the modal seed segment count.
+  - name: ref_script_prior
+    tool: reference
+    supervision: seed_calibration
+    uses_video: false
+    description: >
+      Modal seed label sequence replayed at mean seed boundary positions. The
+      strongest arm that never looks at a video, and the number any perception
+      claim must clear.

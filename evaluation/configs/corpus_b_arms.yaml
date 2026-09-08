@@ -1,0 +1,304 @@
+# Corpus B arms -- corpus_b_plan.md section 7.1.
+#
+# Ported from configs/alignment_arms.yaml so that Corpus A and Corpus B differ in
+# CORPUS and nothing else. Every deviation below is forced by the corpus, applies
+# to every arm identically, and therefore leaves the contrasts untouched.
+#
+# 1. CAMERAS. RoboInter ships observation.images.primary and .wrist. Corpus A's
+#    stacked arm used [wrist, right]; "right" does not exist here, so the stack
+#    becomes [wrist, primary]. Single-camera arms already use wrist, which does.
+#
+# 2. plan.plan_max_steps: 8 -> 50. Corpus A episodes carry 5-6 subtasks; Corpus B
+#    carries 2-38, and 72 of the 1,202 eval trajectories exceed 8. At the Corpus A
+#    value those episodes would be truncated, placed_fraction would fall, and the
+#    drop would read as a tool failure when it is a configuration ceiling. Raised
+#    uniformly across all arms.
+#
+# NOT changed, and deliberately: fps, max_frames_per_prompt, frame width,
+# temperature, sampling, and the frame formats that define the arms. Corpus B's
+# video is 320x180 against Corpus A's 640x480 (section 2.7), so the 224px contact
+# sheet and the 300-frame budget now sit above the source resolution. Raising them
+# would make Corpus B a different experiment rather than the same one on new data.
+arms:
+- name: align_default
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b60
+  camera: wrist
+  base_arm: align_fixed_label
+  description: 'THE SHIPPED DEFAULT: fixed-label alignment exactly as a user gets it today without reading
+    the handoff -- contact sheets, one camera, no calibration, the default 60-frame budget (subtask_align_frame_format
+    defaults to contact_sheet, max_frames_per_prompt to 60, calibration to None). The 60-frame cap binds
+    on 99.5% of Corpus A episodes, so this arm sees roughly half the frames every other arm sees. Baseline
+    of contrasts 5 and 6; the reference point for claim A4, whether the shipped defaults leave a large
+    measurable margin on the table.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: contact_sheet
+    plan.max_frames_per_prompt: 60
+- name: align_sheet_300
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  description: "align_default with the frame budget raised to 300 and nothing else changed. Separates\
+    \ \"weak default budget\" from \"weak format\" (\xA75.2): without it, any video-over-sheets win would\
+    \ be read as a format effect when it could be a budget effect. Numerator of contrast 5 (budget) and\
+    \ baseline of contrast 1 (format, budget held equal). At fps 2.0 the 300-frame cap binds on no scored\
+    \ Corpus A episode -- the longest wants 211 -- so this arm samples the full 2 fps grid."
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: contact_sheet
+    plan.max_frames_per_prompt: 300
+- name: align_video
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  description: Native video, one camera, no calibration. max_frames_per_prompt is stated as 300 -- NOT
+    left to inherit the shipped 60 -- because contrast 1 claims to isolate frame format, and it does so
+    only if both sides use the same frame budget. Since neither 300-frame arm is capped on any scored
+    episode, align_video and align_sheet_300 sample the identical timestamp grid on all 797 and differ
+    solely in whether those frames arrive as JPEG grids with the time burned in or as a clip whose timestamps
+    the model carries natively. Numerator of contrast 1 (A1) and of contrast 8 (does the video help at
+    all); baseline of contrasts 2 and 3.
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.max_frames_per_prompt: 300
+- name: align_video_stack
+  tool: align
+  supervision: labels_only
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: stack2
+  base_arm: align_fixed_label
+  description: 'Native video with the wrist and right views vertically STACKED into each frame, no calibration.
+    Identical to align_video in every other field, including the explicit 300-frame budget, which on the
+    video path is a per-timestamp budget rather than a per-view one: stacking costs pixels, not timeline.
+    So this arm and align_video see the same timestamps and contrast 2 isolates the second view alone
+    -- the wrist sees contact, the external view sees approach. Numerator of contrast 2 (A2); baseline
+    of contrast 4.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.primary]'
+    plan.max_frames_per_prompt: 300
+- name: align_video_cal
+  tool: align
+  supervision: labels_plus_seed
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: wrist
+  base_arm: align_fixed_label
+  calibration_fit_arm: align_video
+  description: >-
+    align_video with frozen positional calibration from at most ten shared seed
+    trajectories per task. The corrected task driver pools wording variants by
+    segment count, requires at least three usable seeds per count, and uses the
+    identical uncalibrated configuration for unsupported or rejected fits.
+    This crosses supervision levels relative to align_video. Runtime events
+    establish calibration_applied separately from seed-count eligibility.
+    See calibration_protocol.md; historical exact-label results are unchanged.
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_calibration_path: '{calibration_path}'
+    plan.max_frames_per_prompt: 300
+- name: align_video_stack_cal
+  tool: align
+  supervision: labels_plus_seed
+  uses_video: true
+  equalised: true
+  profile: b300
+  camera: stack2
+  base_arm: align_fixed_label
+  calibration_fit_arm: align_video_stack
+  description: "align_video_stack plus the seed-fitted calibration -- the configuration behind the 83.79%\
+    \ tIoU / 1.51s MAE / 89.4% B@3 prior result, and the best configuration this study has. Numerator\
+    \ of contrast 4 (A3, stacked), contrast 6 (A4, total margin over the shipped defaults) and contrast\
+    \ 7 (A5, does the best configuration beat a model-free timing template). Its calibration must be fit\
+    \ under align_video_stack, not align_video: a fit taken under one camera set and applied under another\
+    \ is a silent fit/serve skew (\xA77.2a), which is what calibration_fit_arm records."
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    vlm.camera_key: observation.images.wrist
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.frames_per_second: 2.0
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 50
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_quality: 84
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.subtask_generate_frame_format: contact_sheet
+    plan.subtask_realign_generated: false
+    plan.subtask_video_fallback: error
+    plan.subtasks_path: '{subtasks_path}'
+    plan.subtask_align_sampling: uniform
+    plan.subtask_align_min_fraction: 0.0
+    plan.subtask_align_frame_format: video
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.primary]'
+    plan.subtask_align_calibration_path: '{calibration_path}'
+    plan.max_frames_per_prompt: 300
+- name: floor_uniform
+  tool: reference
+  supervision: labels_only
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: "|L| equal parts of the episode, anchored at the EPISODE START and not at t=0. Baseline\
+    \ of contrast 8 (claim A5): does looking at the video beat splitting the episode into equal parts?\
+    \ The anchor is the whole point -- evaluate_alignment measures every boundary error from ground_truth[0][\"\
+    start\"] while reference_arms._equal_split anchors at zero, and where those differ the floor carries\
+    \ a constant per-component bias that would read as VLM superiority (\xA75.1). One Corpus A episode\
+    \ is affected (u850-bag-place-02-FV-v30 episode 24 starts at 0.563s), which is small, silent, and\
+    \ 0.563s against a b_hit@1 tolerance of 1s."
+- name: floor_median_ratio
+  tool: reference
+  supervision: labels_plus_seed
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: "Seed set median RELATIVE boundary positions. Produced and scored but referenced by no\
+    \ \xA78 contrast, so it is reported descriptively and is not in the Holm family. It is declared here\
+    \ anyway because contrast_policy fails closed on an arm with no metadata: without this row the arm\
+    \ appears in the per-arm table with its supervision level recorded nowhere, and any future contrast\
+    \ naming it would be refused for missing metadata rather than for anything real."
+- name: floor_cumulative_prior
+  tool: reference
+  supervision: labels_plus_seed
+  uses_video: false
+  equalised: true
+  source: align_floors.py
+  description: "Seed median SEGMENT LENGTHS, normalised to sum to 1 and accumulated: boundary k at t0\
+    \ + D * (sum_{i<k} f_i) / (sum_i f_i). The strongest model-free arm and the baseline of contrast 7\
+    \ (claim A5). Deterministic and model-free BY CONSTRUCTION rather than by hope -- \xA75.1 measured\
+    \ the obvious \"priors-only DP\" alternative still moving boundaries 0.70s apart with the prior weighted\
+    \ 100,000x, because the medians never sum to exactly 1 and the surplus is placeable anywhere at zero\
+    \ cost with the model silently deciding where. Stage B gate 11 proves the property by re-running these\
+    \ arms against two opposite synthetic model answers and requiring byte-identical output. The corrected\
+    \ task protocol uses --prior-scope segment_count: all matching-count examples from the same ten task\
+    \ seeds, with at least three usable examples per count. Legacy exact/length modes retain their\
+    \ modal exact-label fitting behavior."

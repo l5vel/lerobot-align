@@ -1,0 +1,35 @@
+You are timing a FIXED, ORDERED list of subtasks against a robot
+demonstration shown as a video. Each frame of the video is labelled with its
+own time in seconds, and those times are the episode's real times — use them
+directly.
+
+The operator's goal was: "{episode_task}"
+
+The subtasks below already describe what the robot does, in the order it
+does them. Do NOT rewrite, rename, split, merge, or reorder them, and do
+NOT invent new ones. Your ONLY job is to say WHEN each one happens.
+
+Subtasks:
+{subtask_list}
+
+The episode runs from {episode_start}s to {episode_end}s.
+
+For each subtask, give its start and end time in seconds:
+
+- The subtasks are consecutive: each one's end is the next one's start.
+  The first starts at {episode_start} and the last ends at {episode_end}.
+- Judge from what is VISIBLE in the video. If a listed subtask genuinely
+  never happens in this episode, give it "start": null and "end": null
+  rather than squeezing it in.
+- Do NOT cut the episode into equal blocks. Real subtasks differ in
+  length, often by a lot.
+
+Output strictly valid JSON — one entry per subtask, in list order, and
+nothing else:
+
+  {{
+    "subtasks": [
+      {{"index": 0, "start": <seconds or null>, "end": <seconds or null>}},
+      ...
+    ]
+  }}

@@ -1,0 +1,408 @@
+# The eight PRE-REGISTERED contrasts of alignment_plan.md §8, as data.
+#
+# Fixed before any run. Nothing outside this list is reported as a hypothesis
+# test; everything else in the report is descriptive (§8).
+#
+# WHY THIS FILE EXISTS. `aggregate.py` keys contrasts by arm with ONE baseline
+# per invocation (defect D13), so §8's family cannot be built in a single run.
+# Producing it as six or eight separate invocations would hand Holm six or eight
+# small families instead of one, and Holm on a split family is not conservative,
+# it is wrong in the permissive direction: the smallest p in a family of 3 only
+# has to clear 0.05/3 = 1.7e-2, while the smallest p in the real family of 24 has
+# to clear 0.05/24 = 2.1e-3 -- an order of magnitude of slack, applied silently,
+# to the primary claims. This file is the union, so one Holm pass spans it.
+#
+# THE FAMILY IS 24 TESTS: 8 contrasts x 3 metrics (§7.4a), and Holm operates over
+# every (contrast x metric) test ACTUALLY COMPUTED, not over the subset that ends
+# up in the report. A test dropped from the write-up still consumed alpha.
+# `expected_tests: 24` is there so a run that computes a different number fails
+# loudly rather than silently re-sizing the correction.
+#
+# The power this buys is stated before the run, not discovered after it. At the
+# 2.1e-3 threshold the project's own `sign_test` over 16 components tolerates one
+# losing component (p = 0.0125) and not two (p = 0.100); over the 11 non-fridge
+# components it tolerates none. That is a real cliff, so the cluster bootstrap --
+# which does not have it -- is the primary inference, and any contrast that fails
+# only the sign test is reported as such and not as a null (§7.4a, §7.5).
+#
+#
+# SUPERVISION, AND THE CROSS-LEVEL CHANNEL
+# ----------------------------------------
+# Contrasts are computed WITHIN a supervision level (§4.1). `aggregate.py`'s gate
+# enforcing that is restored for this study and is NOT overridable: the previous
+# study overrode it to force C4 -- unsupervised VLM arms against a reference that
+# had seen ten annotated episodes -- and that headline result had to be withdrawn
+# (§1.2). Overriding it is how you get a claim you have to retract.
+#
+# Three contrasts here cross levels anyway, and deliberately: a calibrated arm has
+# seen ten annotated episodes of its own component that its uncalibrated
+# counterpart has not. Deleting them would delete claim A3 entirely, and slipping
+# them past the gate is what was just described. So they take the explicit channel
+# §4.1 defines: `cross_level: true` permits the contrast, stamps
+# `supervision_asymmetry` on the result, and obliges the report generator to
+# render that stamp on EVERY row. A cross-level contrast that is not declared here
+# is still refused.
+#
+# That stamp is the honest framing, not a disclaimer: "calibration helps" is a
+# claim about a system that has been given ten labelled examples, and the cost of
+# those ten examples belongs in the reader's view of the result.
+#
+# THREE, NOT TWO. §4.1 says "two comparisons in §8 deliberately cross levels
+# (contrasts 7 and 8)". That sentence is stale -- it describes an earlier draft of
+# the §8 table. Under the table as it now stands, and under the supervision levels
+# §5.1 and §5.2 assign, the crossings are forced and countable:
+#
+#   3  align_video_cal (labels_plus_seed)       vs align_video (labels_only)        CROSS
+#   4  align_video_stack_cal (labels_plus_seed) vs align_video_stack (labels_only)  CROSS
+#   6  align_video_stack_cal (labels_plus_seed) vs align_default (labels_only)      CROSS
+#   7  align_video_stack_cal (labels_plus_seed) vs floor_cumulative_prior (same)    within
+#   8  align_video (labels_only)                vs floor_uniform (same)             within
+#
+# §8's own paragraph agrees ("Contrasts 3, 4 and 6 cross supervision levels ...
+# declared cross_level: true"), and §4.1's other example -- "contrast 8 (raw VLM
+# vs median-ratio template)" -- names an arm pairing that is not in the table at
+# all: contrast 8's baseline is `floor_uniform`, while `floor_median_ratio` is a
+# labels_plus_seed floor no §8 row uses. So the §8 table governs and §4.1's count
+# is transcription drift. Declaring only two would leave contrast 6 -- claim A4,
+# the whole recommendation about the shipped defaults -- to be refused by the gate
+# or forced through it. `cross_level` is asserted against the arms' own declared
+# supervision on load; it is not taken on trust from this file.
+#
+#
+# METRIC DIRECTION IS DECLARED, NOT INFERRED
+# ------------------------------------------
+# `aggregate.py:50` hard-codes a `LOWER_IS_BETTER` set containing no alignment
+# metric (defect D14), so `boundary_mae_placed` and `boundary_mae_norm` would be
+# reported with their signs inverted: an arm that doubled its boundary error would
+# appear to beat its baseline, starred. `metric_directions` below is the register
+# for this study. It is data rather than a second hard-coded set so that the
+# scorer, the aggregator and the report generator cannot disagree about polarity.
+# Only unsigned error magnitudes are `lower`.
+#
+# The three family metrics follow §8: B@3 and `placed_fraction` are the primaries,
+# macro tIoU rides along for continuity with the prior work. §6.1 is the reason
+# the primaries are those two and not MAE. Measured over all 3,983 internal
+# boundaries of Corpus A, the NORMALISED penalty for a missing boundary has median
+# 0.750, while a boundary placed at the prior work's best accuracy (1.51s on a
+# ~100s episode) contributes 0.0151 -- one dropped label outweighs roughly 49
+# accurately placed ones. Any MAE-based ranking is a ranking on drop rate with
+# accuracy noise on top, and normalising fixes cross-component comparability
+# without fixing that. So: B@3, which is bounded and scores a miss as a miss, plus
+# `placed_fraction`, which is the drop rate itself. `boundary_mae_placed` is
+# secondary and, because placed-only averages improve when hard cases are dropped,
+# is never reported without `placed_fraction` beside it. `boundary_mae_norm` is a
+# diagnostic and not an accuracy metric.
+#
+# macro tIoU is in the family but carries a caveat the report must render: it
+# scores the stitched segmentation INCLUDING the two deterministically forced
+# episode endpoints, so every arm -- `floor_uniform` included -- banks credit for
+# boundaries no one placed. It is part of why a model-free floor scores near 70%.
+#
+#
+# THE FLOOR ARMS ARE DECLARED IN THE ARM TABLE; THIS BLOCK IS THE CROSS-CHECK
+# ---------------------------------------------------------------------------
+# Contrasts 7 and 8 reference model-free arms produced by `align_floors.py`, not
+# by `run_arm.py`. An earlier draft of this file kept them OUT of
+# `alignment_arms.yaml` on the grounds that listing them beside the launched arms
+# would invite launching them. That reasoning does not survive contact with the
+# sibling study: `arms.yaml` already declares four model-free arms produced by
+# `reference_arms.py` as ordinary `arms:` entries carrying `tool: reference`, and
+# `tool: reference` is precisely the mechanism that keeps the launcher off them --
+# `run_all.sh:arms_matching` filters on it, and both `preflight.check_grid` and
+# `preflight.check_arm_flags` skip it. So the floors are declared there too, the
+# same way, and `alignment_arms.yaml` is authoritative.
+#
+# Keeping them ONLY here could never describe `floor_median_ratio`: it is one of
+# §5.1's three floors, it is produced and scored and shown in the per-arm table,
+# and no §8 contrast references it -- so a file keyed by contrast has no row for
+# it, and it was reported with its supervision level recorded nowhere.
+#
+# `external_arms` is retained as the redundant contract it describes itself as,
+# and the redundancy is checked rather than assumed: `aggregate.py` refuses to run
+# when the two files disagree on `tool` or `supervision` (a disagreement would
+# otherwise decide a supervision verdict by load order), and `align_floors.py
+# --arm-tables` reconciles both against the metadata the floors actually emit.
+# The floors' own emitted metadata stays authoritative over both files.
+#
+# A5 is retained at one row and zero GPU cost, deliberately (§1.5). Six
+# configurations compared only against each other establish which is best, not
+# whether any is good: a twelve-point win of video over contact sheets is still
+# twelve points of nothing if neither beats placing boundaries at typical timings
+# without watching the video. These two rows are what make the other six
+# interpretable. Note `floor_cumulative_prior`, not a "priors-only DP" -- §5.1
+# measured the DP construction to be non-model-free, its surplus mass placeable
+# anywhere at zero cost with the model's answer silently deciding where, and the
+# disagreement did not vanish at a duration weight of 100,000.
+#
+#
+# OTHER STALE CROSS-REFERENCES IN THE PLAN, AND WHAT GOVERNS
+# ----------------------------------------------------------
+# Transcribed from §8's table, which is the pre-registration. Elsewhere the plan
+# drifted, and the drift is noted here so a reader does not read this file as a
+# mis-transcription:
+#   * §5.1 calls `floor_cumulative_prior` "the denominator of claim A2" and §2.1a
+#     credits A2 with generalising the model-free control. Per §1.3 that content
+#     is A5 ("the best configuration beats a model-free timing template"); A2 is
+#     stacking. §8's claim column is used.
+#   * §4.2 says the calibration-applied rate is a primary reported quantity "for
+#     contrasts 1 and 2". Contrasts 1 and 2 involve no calibrated arm; the
+#     calibrated contrasts are 3, 4 and 6, and `report_calibration_applied` is set
+#     on those.
+#   * D12 calls `align_video_stack_cal` "the numerator of contrast 1". Contrast
+#     1's numerator is `align_video`; `align_video_stack_cal` is the numerator of
+#     4, 6 and 7. The defect it describes is real either way.
+#   * §3.2 computes the headline on the 11 non-fridge components while §7.4a says
+#     the headline population is "all 16 components with fridge-drink reported
+#     separately rather than excluded". §7.4a revisits the choice explicitly and
+#     is followed; `strata` below carries both.
+
+study: alignment
+family: alignment_v1
+alpha: 0.05
+correction: holm
+family_scope: single
+expected_tests: 24
+
+# The three metrics every contrast is tested on. 8 x 3 = 24 = expected_tests.
+# `metrics` is aggregate.py's name for the Holm family, not for everything
+# measured -- `--metrics` on its command line is the wider set, and it refuses to
+# run if any family metric is missing from it.
+#
+# FIELD NAMES FOLLOW aggregate.py, WHICH READS THIS FILE. `numerator`/`baseline`
+# are the two required keys; `id` is the §8 row number, so a Holm key reads
+# "4. align_video_stack_cal vs align_video_stack"; `level` records the level a
+# contrast is computed at and must match at least one arm's own supervision, so on
+# the three cross-level rows it carries the NUMERATOR's level rather than the word
+# "cross" -- the crossing is declared by `cross_level` and spelled out by the
+# `supervision_arm`/`supervision_baseline` pair, which are this file's own fields
+# and are asserted against the arms on load. Arm metadata stays authoritative for
+# every gate; nothing here can widen what the arms themselves declare.
+#
+# `dimension` IS LOAD-BEARING, NOT DOCUMENTATION. It is how D12 is fixed: rather
+# than trusting a per-arm `equalised` boolean that cannot express "this comparison
+# is about cameras", aggregate.py diffs the two arms' metadata and flags, maps each
+# differing setting to a dimension, and REFUSES the contrast if anything differs
+# that the contrast has not declared. So each row below declares exactly the
+# dimensions its two arms actually differ on -- verified against the arm file, not
+# asserted. Row 6 declares `all` because it is deliberately confounded: it is the
+# total margin over the shipped defaults, not a controlled test of one dimension,
+# and `all` makes the report say so on every row. Rows 7 and 8 declare `tool`,
+# the dimension a VLM arm and a model-free floor differ on.
+metrics:
+- b_hit@3
+- placed_fraction
+- macro_temporal_iou
+
+# Reported, never Holm-corrected, never the basis of a hypothesis test (§8).
+# `calibration_applied` is a reliability rate, not an outcome: it says what
+# fraction of episodes the treatment reached, which is what makes contrasts 3, 4
+# and 6 readable as blended treatments rather than clean ones.
+secondary_metrics:
+- b_hit@1
+- b_hit@5
+- boundary_mae_placed
+- boundary_mae_norm
+- calibration_applied
+
+metric_directions:
+  placed_fraction: higher
+  b_hit@1: higher
+  b_hit@3: higher
+  b_hit@5: higher
+  boundary_mae_placed: lower
+  boundary_mae_norm: lower
+  macro_temporal_iou: higher
+  calibration_applied: higher
+
+# Every contrast is computed on all 16 components (the headline population) and
+# again on each stratum. Fridge-drink is reported separately rather than dropped:
+# the alignment prompts, frame format and calibration design were developed on
+# u850-fridge-drink-06, which is not in Corpus A but whose five siblings here are
+# the same task, robot and annotation team (§3.2).
+strata:
+  headline: all_16
+  report_separately:
+  - name: non_fridge_11
+    components_matching_not: fridge-drink
+    note: 'The 11 development-independent components. §7.4a: at K=11 the Holm threshold
+      tolerates ZERO losing components on the sign test, which is why the cluster bootstrap
+      is the primary inference and this is a stratum rather than the headline.'
+  - name: fridge_drink_5
+    components_matching: fridge-drink
+    note: Development-adjacent; must be labelled as such wherever it is shown.
+
+# Arms referenced by contrasts 7 and 8 that `alignment_arms.yaml` does not define.
+# Produced by align_floors.py; these values are the contract it must satisfy and
+# preflight must reconcile against its emitted metadata.
+external_arms:
+  floor_uniform:
+    tool: reference
+    supervision: labels_only
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+    note: '|L| equal parts of the episode, anchored at the EPISODE START and not at t=0.
+      reference_arms._equal_split anchors at zero while evaluate_alignment measures from
+      ground_truth[0]["start"]; where those differ the floor carries a constant per-component
+      bias that would read as VLM superiority in contrast 8 (§5.1).'
+  floor_cumulative_prior:
+    tool: reference
+    supervision: labels_plus_seed
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+    note: 'Seed median segment lengths, normalised to sum to 1 and accumulated: boundary k at
+      t0 + D * (sum_{i<k} f_i) / (sum_i f_i). The strongest model-free arm. Deterministic and
+      model-free by construction, no solver -- and Stage B gate 11 proves it, by re-running it
+      against two opposite synthetic model answers and requiring byte-identical output. Its
+      seed set is filtered by label list, as the calibration fit is, because both average
+      POSITIONAL boundaries and position 1 is a different event in episodes that follow
+      different conventions (§5.1).'
+
+contrasts:
+- id: 1
+  dimension: frame_format
+  numerator: align_video
+  baseline: align_sheet_300
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A1
+  label: frame format, budget held equal
+  description: 'A1, native video beats contact sheets. The budget is held equal at
+    max_frames_per_prompt 300 on both sides, and since that cap binds on no scored Corpus A
+    episode at fps 2.0 the two arms sample the IDENTICAL timestamp grid on all 797 -- they differ
+    only in whether
+    those frames arrive as timestamped JPEG grids the model reads back as text, or as a clip
+    whose ``<12.3 seconds>`` tokens the model carries natively. Contrast 5 is what makes this
+    one interpretable: without it, a win here could be the budget rather than the format.
+    Confounded with prompt wording, which the video path changed at the same time (§12.5);
+    that is stated as a limitation, not separated, and the separating arm is future work.'
+- id: 2
+  dimension: cameras
+  numerator: align_video_stack
+  baseline: align_video
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A2
+  label: stacking
+  description: 'A2, two stacked camera views beat one. Budget-neutral in fact and not merely
+    in configuration: on the video path the frame budget is per timestamp rather than per view,
+    so both arms sample the same grid and the only difference is the second view inside each
+    frame. The single-camera arm uses the wrist view, which is one of the two in the stack, so
+    this reads as "what does the external view add" rather than "wrist versus some other pair".'
+- id: 3
+  dimension: calibration
+  numerator: align_video_cal
+  baseline: align_video
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, single view
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: 'A3, the seed-fitted timing calibration helps, on one camera. CROSSES supervision
+    levels: the numerator has seen ten annotated episodes of this component and the baseline has
+    not, so every row carries the supervision_asymmetry stamp. The treatment is BLENDED, not
+    uniform -- calibration is fit for one label tuple and applies_to demands an exact match, so
+    on a component with mixed conventions the "calibrated" arm is calibrated on the modal
+    subpopulation and uncalibrated on the rest. That is why calibration_applied is reported
+    beside the effect and why the contrast is additionally reported restricted to the modal
+    subpopulation, where the treatment is uniform (§4.2). Every component is calibrated with
+    --force, including the four clean-table components the shipped gate would refuse: letting
+    the gate filter the corpus would condition A3 on the population where calibration already
+    works, which is the exact error §2.1b identifies in the prior sweep. The gate is recorded,
+    not obeyed, and its verdict becomes the prediction A6 tests.'
+- id: 4
+  dimension: calibration
+  numerator: align_video_stack_cal
+  baseline: align_video_stack
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, stacked
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: 'A3 on the stacked configuration. Same cross-level declaration and the same
+    blended-treatment caveat as C3. Its calibration is fit under align_video_stack, never under
+    align_video: a fit taken in one regime and applied in another is a silent fit/serve skew,
+    which §7.2a requires preflight to rule out field by field. This is also the pair that
+    defect D7 makes unstable until the fit set is pinned -- the fitter selects candidate label
+    lists by length with max() over a SET, so fridge-drink-02 crashes on 20 of 40 hash seeds and
+    fridge-drink-03 gets a different calibration each run.'
+- id: 5
+  dimension: frame_budget
+  numerator: align_sheet_300
+  baseline: align_default
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A4
+  label: frame budget
+  description: 'The frame-budget half of the margin the shipped defaults leave on the table.
+    §8''s claim column leaves this row as prose; A4 is the claim it decomposes and C6 is the
+    total of which it is a part, so it is registered under A4 rather than left unattributed --
+    the family size is fixed at 24 either way. This is a real difference and not a nominal one:
+    at fps 2.0 the shipped 60-frame cap binds on 99.5% of Corpus A episodes, so the median
+    episode is seen at 60 tiles instead of the 108 it asks for. §5.2''s purpose for this arm is
+    to separate "weak default budget" from "weak format"; C1 is the format half.'
+- id: 6
+  dimension: all
+  numerator: align_video_stack_cal
+  baseline: align_default
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A4
+  label: total margin over shipped defaults
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: 'A4, the total margin between what a user gets today without reading the handoff
+    and the best configuration this study has -- format, budget, second view and calibration
+    together. CROSSES supervision levels and is declared so; the deliverable that rests on it is
+    the recommendation on whether the shipped defaults should change, and that recommendation
+    must state that the calibrated end of the margin costs ten labelled episodes per component.
+    Not a controlled test of any single dimension: C1, C2, C3, C4 and C5 decompose it.'
+- id: 7
+  dimension: tool
+  numerator: align_video_stack_cal
+  baseline: floor_cumulative_prior
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_plus_seed
+  cross_level: false
+  claim: A5
+  label: sanity check
+  description: 'A5, the best configuration against the strongest model-free timing template.
+    WITHIN level and genuinely so: both sides have seen the same ten seed episodes of the
+    component, which is exactly the information-matching the generation study''s withdrawn C4
+    lacked. These floor arms are the right controls HERE precisely because the labels are
+    supplied to every arm, so tool and template are information-matched and the contrast is real
+    (§1.2). Read with the tIoU endpoint-inflation caveat: a floor banks credit for the two
+    forced episode endpoints too.'
+- id: 8
+  dimension: tool
+  numerator: align_video
+  baseline: floor_uniform
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A5
+  label: does the video help at all
+  description: 'A5 at the other end: does looking at the video beat splitting the episode into
+    |L| equal parts? Within level -- neither side has seen a seed episode. This is the row that
+    prices every other row in the study. On one dataset the prior control found median-ratio
+    placement at 70.83% tIoU and the uncorrected model at 70.65% -- statistically identical --
+    so the possibility that the VLM adds nothing is live, not rhetorical, and it has never been
+    tested on more than one component. The floor must be anchored at the episode start for this
+    to be a fair question at all (see external_arms).'

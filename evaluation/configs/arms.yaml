@@ -1,0 +1,984 @@
+# Experimental arms, as a factorial over configuration profile x camera x tool.
+#
+# WHY A FACTORIAL. The first version pinned upstream's defaults for equalisation.
+# That is fair but has poor external validity: this repo's own run_annotate.sh
+# uses fps 3 / budget 300 / 336px / 12 steps, and its published experiments use
+# the WRIST camera. At upstream defaults a median 53.6s episode is split into 2
+# windows, each independently allowed 8 subtasks, which forces over-segmentation
+# (16 permitted vs a human median of 6) on BOTH tools. Measuring only there would
+# report an artifact of the equalisation choice as a property of the tools.
+#
+# So configuration is a REPORTED DIMENSION, not a selected one. Every cell is run
+# and every cell is reported; nothing is chosen after seeing scores.
+#
+# NOTE ON run_annotate.sh, named above and in the `wrap` arm descriptions below.
+# It was the maintainer's host-specific annotation wrapper and is deliberately
+# not published, so its settings cannot be checked against it from a clone. The
+# settings it contributed are the ones stated here and are frozen in each arm's
+# own flag list, which is what the harness actually executes; the reference is
+# kept because it records where the `wrap` profile's values came from.
+#
+# MEASURED OUTCOME (added after the sweep; the pre-run text above is left intact).
+# The over-segmentation prediction was WRONG, and in the direction that matters.
+# Measured log(n_pred / n_true) is about -0.03 at udef -- the right number of
+# segments -- and -0.26 to -0.58 at wrap, i.e. the wrap profile emits roughly
+# half the segments the humans did. udef also beats wrap on macro IoU in all 12
+# tool x camera contrasts (+0.039 to +0.162, p_holm <= 0.009). The inference from
+# "the window cap permits 16 subtasks" to "the model will emit 16" was unfounded:
+# a cap is not a behaviour. Both profiles are still reported, as promised.
+# See analysis/deviations.md D50.
+#
+# WHY CAMERA IS A DIMENSION. Different robot setups place cameras differently and
+# a given view carries different information -- a wrist view sees contact, an
+# external view sees navigation. Reporting per-camera is the informative result;
+# picking one would bury it.
+#
+# EQUALISATION still holds where it matters: within a (profile, camera) cell both
+# tools receive byte-identical settings, so every contrast is like-for-like. Cells
+# are never compared across tools -- only tool-vs-tool within a cell.
+#
+# THINKING is disabled for every arm (see analysis/deviations.md D47): the model
+# is a reasoning model served with --reasoning-parser qwen3, and with thinking on
+# it consumed its budget without emitting parseable output. An enable_thinking:true
+# comparison is a planned secondary experiment, not part of the primary grid.
+
+arms:
+- name: baseline_upstream__udef__left
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: left
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at upstream defaults verbatim, camera observation.images.left. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.left
+- name: align_defaults__udef__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: left
+  base_arm: align_defaults
+  description: 'align_defaults at upstream defaults verbatim, camera observation.images.left. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.left
+- name: align_video__udef__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: left
+  base_arm: align_video
+  description: 'align_video at upstream defaults verbatim, camera observation.images.left. Equalised WITHIN
+    its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.left
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__udef__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: left
+  base_arm: align_video_realign
+  description: 'align_video_realign at upstream defaults verbatim, camera observation.images.left. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.left
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: baseline_upstream__udef__right
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: right
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at upstream defaults verbatim, camera observation.images.right. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.right
+- name: align_defaults__udef__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: right
+  base_arm: align_defaults
+  description: 'align_defaults at upstream defaults verbatim, camera observation.images.right. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.right
+- name: align_video__udef__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: right
+  base_arm: align_video
+  description: 'align_video at upstream defaults verbatim, camera observation.images.right. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.right
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__udef__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: right
+  base_arm: align_video_realign
+  description: 'align_video_realign at upstream defaults verbatim, camera observation.images.right. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.right
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: baseline_upstream__udef__wrist
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: wrist
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at upstream defaults verbatim, camera observation.images.wrist. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+- name: align_defaults__udef__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: wrist
+  base_arm: align_defaults
+  description: 'align_defaults at upstream defaults verbatim, camera observation.images.wrist. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+- name: align_video__udef__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: wrist
+  base_arm: align_video
+  description: 'align_video at upstream defaults verbatim, camera observation.images.wrist. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__udef__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: udef
+  camera: wrist
+  base_arm: align_video_realign
+  description: 'align_video_realign at upstream defaults verbatim, camera observation.images.wrist. Equalised
+    WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: baseline_upstream__wrap__left
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: left
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at the settings this repo''s own run_annotate.sh uses, camera observation.images.left.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.left
+- name: align_defaults__wrap__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: left
+  base_arm: align_defaults
+  description: 'align_defaults at the settings this repo''s own run_annotate.sh uses, camera observation.images.left.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.left
+- name: align_video__wrap__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: left
+  base_arm: align_video
+  description: 'align_video at the settings this repo''s own run_annotate.sh uses, camera observation.images.left.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.left
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__wrap__left
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: left
+  base_arm: align_video_realign
+  description: 'align_video_realign at the settings this repo''s own run_annotate.sh uses, camera observation.images.left.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.left
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: baseline_upstream__wrap__right
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: right
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at the settings this repo''s own run_annotate.sh uses, camera observation.images.right.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.right
+- name: align_defaults__wrap__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: right
+  base_arm: align_defaults
+  description: 'align_defaults at the settings this repo''s own run_annotate.sh uses, camera observation.images.right.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.right
+- name: align_video__wrap__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: right
+  base_arm: align_video
+  description: 'align_video at the settings this repo''s own run_annotate.sh uses, camera observation.images.right.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.right
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__wrap__right
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: right
+  base_arm: align_video_realign
+  description: 'align_video_realign at the settings this repo''s own run_annotate.sh uses, camera observation.images.right.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.right
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: baseline_upstream__wrap__wrist
+  tool: upstream
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: wrist
+  base_arm: baseline_upstream
+  description: 'baseline_upstream at the settings this repo''s own run_annotate.sh uses, camera observation.images.wrist.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+- name: align_defaults__wrap__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: wrist
+  base_arm: align_defaults
+  description: 'align_defaults at the settings this repo''s own run_annotate.sh uses, camera observation.images.wrist.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+- name: align_video__wrap__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: wrist
+  base_arm: align_video
+  description: 'align_video at the settings this repo''s own run_annotate.sh uses, camera observation.images.wrist.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_video_fallback: error
+- name: align_video_realign__wrap__wrist
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: true
+  profile: wrap
+  camera: wrist
+  base_arm: align_video_realign
+  description: 'align_video_realign at the settings this repo''s own run_annotate.sh uses, camera observation.images.wrist.
+    Equalised WITHIN its (profile, camera) cell: the paired arm sees identical settings.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+- name: align_video_realign__udef__stack2
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: false
+  profile: udef
+  camera: stack2
+  base_arm: align_video_realign
+  description: 'generate -> realign with synchronised views vertically STACKED into each video frame (stack2),
+    at udef settings. NOT equalised and deliberately so: upstream reads one camera and has no counterpart,
+    so this is a capability claim about the tool, not a tool-vs-tool contrast. It is compared against
+    the single-camera align_video_realign__udef__wrist to isolate what stacking adds, which is the only
+    comparison it supports.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.right]'
+  quarantined: false
+- name: align_video_realign__udef__stack3
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: false
+  profile: udef
+  camera: stack3
+  base_arm: align_video_realign
+  description: 'generate -> realign with synchronised views vertically STACKED into each video frame (stack3),
+    at udef settings. NOT equalised and deliberately so: upstream reads one camera and has no counterpart,
+    so this is a capability claim about the tool, not a tool-vs-tool contrast. It is compared against
+    the single-camera align_video_realign__udef__wrist to isolate what stacking adds, which is the only
+    comparison it supports.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.contact_sheet_frame_width: 224
+    plan.plan_max_steps: 8
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+    plan.subtask_align_camera_keys: '[observation.images.left,observation.images.right,observation.images.wrist]'
+  quarantined: false
+- name: align_video_realign__wrap__stack2
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: false
+  profile: wrap
+  camera: stack2
+  base_arm: align_video_realign
+  description: 'generate -> realign with synchronised views vertically STACKED into each video frame (stack2),
+    at wrap settings. NOT equalised and deliberately so: upstream reads one camera and has no counterpart,
+    so this is a capability claim about the tool, not a tool-vs-tool contrast. It is compared against
+    the single-camera align_video_realign__wrap__wrist to isolate what stacking adds, which is the only
+    comparison it supports.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+    plan.subtask_align_camera_keys: '[observation.images.wrist,observation.images.right]'
+  quarantined: false
+- name: align_video_realign__wrap__stack3
+  tool: align
+  supervision: none
+  uses_video: true
+  equalised: false
+  profile: wrap
+  camera: stack3
+  base_arm: align_video_realign
+  description: 'generate -> realign with synchronised views vertically STACKED into each video frame (stack3),
+    at wrap settings. NOT equalised and deliberately so: upstream reads one camera and has no counterpart,
+    so this is a capability claim about the tool, not a tool-vs-tool contrast. It is compared against
+    the single-camera align_video_realign__wrap__wrist to isolate what stacking adds, which is the only
+    comparison it supports.'
+  flags:
+    seed: 1729
+    vlm.temperature: 0.2
+    vlm.max_new_tokens: 4096
+    vlm.chat_template_kwargs: '{"enable_thinking":false}'
+    interjections.enabled: false
+    vqa.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.min_subtask_seconds: 1.5
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    plan.frames_per_second: 3.0
+    plan.max_frames_per_prompt: 300
+    plan.contact_sheet_frame_width: 336
+    plan.plan_max_steps: 12
+    vlm.camera_key: observation.images.wrist
+    plan.subtask_generate_frame_format: video
+    plan.subtask_align_frame_format: video
+    plan.subtask_video_fallback: error
+    plan.subtask_realign_generated: true
+    plan.subtask_align_camera_keys: '[observation.images.left,observation.images.right,observation.images.wrist]'
+  quarantined: false
+- name: ref_single
+  tool: reference
+  supervision: none
+  uses_video: false
+  description: One span covering the episode. The absolute floor.
+- name: ref_uniform_true
+  tool: reference
+  supervision: oracle_count
+  uses_video: false
+  quarantined: true
+  description: Equal split into the true segment count. Oracle-count reference.
+- name: ref_uniform_modal
+  tool: reference
+  supervision: seed_calibration
+  uses_video: false
+  description: Equal split into the modal seed segment count.
+- name: ref_script_prior
+  tool: reference
+  supervision: seed_calibration
+  uses_video: false
+  description: 'Modal seed label sequence replayed at mean seed boundary positions. The strongest arm
+    that never looks at a video, and the number any perception claim must clear.
+
+    '
+
+- base_arm: baseline_upstream
+  camera: wrist
+  description: 'baseline_upstream at upstream defaults with THINKING ENABLED, camera observation.images.wrist.
+    Secondary robustness experiment (see arms.yaml header and analysis/deviations.md D47): identical to
+    its __udef__ twin in every flag except enable_thinking, so the contrast isolates the decoding mode.'
+  equalised: true
+  flags:
+    interjections.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    seed: 1729
+    vlm.camera_key: observation.images.wrist
+    vlm.chat_template_kwargs: '{"enable_thinking":true}'
+    vlm.max_new_tokens: 4096
+    vlm.temperature: 0.2
+    vqa.enabled: false
+  name: baseline_upstream__udefthink__wrist
+  profile: udefthink
+  supervision: none
+  tool: upstream
+  uses_video: true
+- base_arm: align_defaults
+  camera: wrist
+  description: 'align_defaults at upstream defaults with THINKING ENABLED, camera observation.images.wrist.
+    Secondary robustness experiment (see arms.yaml header and analysis/deviations.md D47): identical to
+    its __udef__ twin in every flag except enable_thinking, so the contrast isolates the decoding mode.'
+  equalised: true
+  flags:
+    interjections.enabled: false
+    plan.contact_sheet_columns: 5
+    plan.contact_sheet_frame_width: 224
+    plan.contact_sheet_frames_per_sheet: 20
+    plan.contact_sheet_quality: 84
+    plan.frames_per_second: 2.0
+    plan.max_frames_per_prompt: 60
+    plan.min_subtask_seconds: 1.5
+    plan.plan_max_steps: 8
+    plan.subtask_describe_first: true
+    plan.subtask_seeded_relabel: false
+    seed: 1729
+    vlm.camera_key: observation.images.wrist
+    vlm.chat_template_kwargs: '{"enable_thinking":true}'
+    vlm.max_new_tokens: 4096
+    vlm.temperature: 0.2
+    vqa.enabled: false
+  name: align_defaults__udefthink__wrist
+  profile: udefthink
+  supervision: none
+  tool: align
+  uses_video: true

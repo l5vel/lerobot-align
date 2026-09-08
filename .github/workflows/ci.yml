@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.30"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: true
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Install development dependencies
+        run: uv sync --locked --extra dev
+
+      - name: Run unit tests
+        run: uv run --no-sync pytest -q
+
+      # `testpaths = ["tests"]` deliberately keeps the step above fast, so the
+      # 104 harness tests under evaluation/ need their own invocation or
+      # nothing would ever run them. They need no network and no GPU.
+      - name: Run evaluation harness tests
+        run: uv run --no-sync pytest -q evaluation
+
+      - name: Run end-to-end smoke tests
+        run: |
+          uv run --no-sync python -m tests.run_e2e_smoke
+          uv run --no-sync python tests/run_e2e_smoke.py
+
+      - name: Run Python checks
+        run: uv run --no-sync ruff check src tests evaluation
+
+      - name: Verify dependency advisory boundaries with real media
+        run: uv run --no-sync python -m tests.run_dependency_boundaries
+
+      - name: Check shell syntax
+        run: for script in scripts/*.sh evaluation/scripts/*.sh; do bash -n "$script"; done
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Smoke-test wheel contents
+        run: |
+          uv run --no-sync python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          wheel = next(Path("dist").glob("lerobot_align-*.whl"))
+          with ZipFile(wheel) as archive:
+              names = archive.namelist()
+              entry_points = archive.read(
+                  next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
+              ).decode()
+
+          assert "lerobot_align/jobs.py" in names
+          assert "lerobot_align/prompts/vqa.txt" in names
+          assert "lerobot-align = lerobot_align.cli:main" in entry_points
+          assert "lerobot-annotate" not in entry_points
+          PY
+
+      - name: Test installed wheel and extracted sdist in fresh environments
+        run: bash scripts/check_distributions.sh

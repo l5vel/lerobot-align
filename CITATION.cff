@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "lerobot-align"
+abstract: >-
+  Steerable multimodal annotation, given-subtask alignment, and boundary
+  calibration pipeline for robotics datasets in LeRobot format.
+type: software
+version: "0.1.0"
+license: Apache-2.0
+authors:
+  - name: "lerobot-align contributors"
+keywords:
+  - robotics
+  - lerobot
+  - vision-language-model
+  - video-annotation
+  - temporal-alignment

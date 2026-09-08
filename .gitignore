@@ -1,0 +1,72 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Output & Artifacts
+outputs/
+*.parquet
+*.mp4
+*.jsonl
+
+# uv.lock is committed for the reproducible contributor environment.
+# Library users still resolve within the dependency ranges in pyproject.toml.
+
+# Host-specific launchers and one dataset's example label list. These are kept
+# on the maintainer's machine but deliberately not published: they encode one
+# cluster's paths, tmux and GPU layout, and the label list was chosen while
+# looking at scores, so it must not be reused as an evaluation input. The
+# launchers that the evaluation study actually invokes DO ship -- see
+# scripts/README.md.
+scripts/run_annotate.sh
+scripts/run_cmd.sh
+scripts/start_qwen35.sh
+scripts/download_qwen35_397b.sh
+scripts/subtasks_fridge_drink.json

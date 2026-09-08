@@ -1,0 +1,218 @@
+# Corpus B contrasts -- corpus_b_plan.md section 9.
+#
+# The SAME eight contrasts and the SAME 24-test Holm family as alignment_v1, fixed before
+# any Corpus B arm ran. Keeping the family identical is what makes a Corpus A result and a
+# Corpus B result comparable; re-deriving it here would let the corpus choose its own
+# hypotheses after the fact.
+#
+# expected_tests stays 24 so a run that computes a different number fails loudly rather
+# than silently re-sizing the correction.
+#
+# The strata differ, and only because Corpus A's could not transfer: its strata split on
+# fridge-drink development-adjacency, and nothing in Corpus B was used to develop the tool.
+# Corpus B's stratum is calibration coverage instead -- see section 6.2.
+study: alignment
+family: corpus_b_v1
+alpha: 0.05
+correction: holm
+family_scope: single
+expected_tests: 24
+metrics:
+- b_hit@3
+- placed_fraction
+- macro_temporal_iou
+secondary_metrics:
+- b_hit@1
+- b_hit@5
+- boundary_mae_placed
+- boundary_mae_norm
+- calibration_applied
+metric_directions:
+  placed_fraction: higher
+  b_hit@1: higher
+  b_hit@3: higher
+  b_hit@5: higher
+  boundary_mae_placed: lower
+  boundary_mae_norm: lower
+  macro_temporal_iou: higher
+  calibration_applied: higher
+strata:
+  headline: all_39
+  report_separately:
+  - name: calibration_covered_965
+    note: The 965 eval trajectories whose (task, segment count) cohort exists, so every calibrated arm
+      is genuinely calibrated. This is the PRIMARY population for claim B2 (plan section 6.2). Defined
+      entirely by which segment counts a task's first ten trajectories happen to contain -- no score enters
+      it -- and fixed before any arm ran.
+  - name: calibration_uncovered_237
+    note: The remaining eval trajectories, where calibrated arms fall back to uncalibrated. Reported so
+      the fallback's effect is visible rather than averaged away.
+external_arms:
+  floor_uniform:
+    tool: reference
+    supervision: labels_only
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+    note: "|L| equal parts of the episode, anchored at the EPISODE START and not at t=0. reference_arms._equal_split\
+      \ anchors at zero while evaluate_alignment measures from ground_truth[0][\"start\"]; where those\
+      \ differ the floor carries a constant per-component bias that would read as VLM superiority in contrast\
+      \ 8 (\xA75.1)."
+  floor_cumulative_prior:
+    tool: reference
+    supervision: labels_plus_seed
+    uses_video: false
+    equalised: true
+    source: align_floors.py
+    note: "Seed median segment lengths, normalised to sum to 1 and accumulated: boundary k at t0 + D *\
+      \ (sum_{i<k} f_i) / (sum_i f_i). The strongest model-free arm. Deterministic and model-free by construction,\
+      \ no solver -- and Stage B gate 11 proves it, by re-running it against two opposite synthetic model\
+      \ answers and requiring byte-identical output. Its seed set is filtered by label list, as the calibration\
+      \ fit is, because both average POSITIONAL boundaries and position 1 is a different event in episodes\
+      \ that follow different conventions (\xA75.1)."
+contrasts:
+- id: 1
+  dimension: frame_format
+  numerator: align_video
+  baseline: align_sheet_300
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A1
+  label: frame format, budget held equal
+  description: "A1, native video beats contact sheets. The budget is held equal at max_frames_per_prompt\
+    \ 300 on both sides, and since that cap binds on no scored Corpus A episode at fps 2.0 the two arms\
+    \ sample the IDENTICAL timestamp grid on all 797 -- they differ only in whether those frames arrive\
+    \ as timestamped JPEG grids the model reads back as text, or as a clip whose ``<12.3 seconds>`` tokens\
+    \ the model carries natively. Contrast 5 is what makes this one interpretable: without it, a win here\
+    \ could be the budget rather than the format. Confounded with prompt wording, which the video path\
+    \ changed at the same time (\xA712.5); that is stated as a limitation, not separated, and the separating\
+    \ arm is future work."
+- id: 2
+  dimension: cameras
+  numerator: align_video_stack
+  baseline: align_video
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A2
+  label: stacking
+  description: 'A2, two stacked camera views beat one. Budget-neutral in fact and not merely in configuration:
+    on the video path the frame budget is per timestamp rather than per view, so both arms sample the
+    same grid and the only difference is the second view inside each frame. The single-camera arm uses
+    the wrist view, which is one of the two in the stack, so this reads as "what does the external view
+    add" rather than "wrist versus some other pair".'
+- id: 3
+  dimension: calibration
+  numerator: align_video_cal
+  baseline: align_video
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, single view
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: "A3, the seed-fitted timing calibration helps, on one camera. CROSSES supervision levels:\
+    \ the numerator has seen ten annotated episodes of this component and the baseline has not, so every\
+    \ row carries the supervision_asymmetry stamp. The treatment is BLENDED, not uniform -- calibration\
+    \ is fit for one label tuple and applies_to demands an exact match, so on a component with mixed conventions\
+    \ the \"calibrated\" arm is calibrated on the modal subpopulation and uncalibrated on the rest. That\
+    \ is why calibration_applied is reported beside the effect and why the contrast is additionally reported\
+    \ restricted to the modal subpopulation, where the treatment is uniform (\xA74.2). Every component\
+    \ is calibrated with --force, including the four clean-table components the shipped gate would refuse:\
+    \ letting the gate filter the corpus would condition A3 on the population where calibration already\
+    \ works, which is the exact error \xA72.1b identifies in the prior sweep. The gate is recorded, not\
+    \ obeyed, and its verdict becomes the prediction A6 tests."
+- id: 4
+  dimension: calibration
+  numerator: align_video_stack_cal
+  baseline: align_video_stack
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A3
+  label: calibration, stacked
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: "A3 on the stacked configuration. Same cross-level declaration and the same blended-treatment\
+    \ caveat as C3. Its calibration is fit under align_video_stack, never under align_video: a fit taken\
+    \ in one regime and applied in another is a silent fit/serve skew, which \xA77.2a requires preflight\
+    \ to rule out field by field. This is also the pair that defect D7 makes unstable until the fit set\
+    \ is pinned -- the fitter selects candidate label lists by length with max() over a SET, so fridge-drink-02\
+    \ crashes on 20 of 40 hash seeds and fridge-drink-03 gets a different calibration each run."
+- id: 5
+  dimension: frame_budget
+  numerator: align_sheet_300
+  baseline: align_default
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A4
+  label: frame budget
+  description: "The frame-budget half of the margin the shipped defaults leave on the table. \xA78's claim\
+    \ column leaves this row as prose; A4 is the claim it decomposes and C6 is the total of which it is\
+    \ a part, so it is registered under A4 rather than left unattributed -- the family size is fixed at\
+    \ 24 either way. This is a real difference and not a nominal one: at fps 2.0 the shipped 60-frame\
+    \ cap binds on 99.5% of Corpus A episodes, so the median episode is seen at 60 tiles instead of the\
+    \ 108 it asks for. \xA75.2's purpose for this arm is to separate \"weak default budget\" from \"weak\
+    \ format\"; C1 is the format half."
+- id: 6
+  dimension: all
+  numerator: align_video_stack_cal
+  baseline: align_default
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_only
+  cross_level: true
+  claim: A4
+  label: total margin over shipped defaults
+  report_calibration_applied: true
+  restrict_to_modal_subpopulation: true
+  description: 'A4, the total margin between what a user gets today without reading the handoff and the
+    best configuration this study has -- format, budget, second view and calibration together. CROSSES
+    supervision levels and is declared so; the deliverable that rests on it is the recommendation on whether
+    the shipped defaults should change, and that recommendation must state that the calibrated end of
+    the margin costs ten labelled episodes per component. Not a controlled test of any single dimension:
+    C1, C2, C3, C4 and C5 decompose it.'
+- id: 7
+  dimension: tool
+  numerator: align_video_stack_cal
+  baseline: floor_cumulative_prior
+  level: labels_plus_seed
+  supervision_arm: labels_plus_seed
+  supervision_baseline: labels_plus_seed
+  cross_level: false
+  claim: A5
+  label: sanity check
+  description: "A5, the best configuration against the strongest model-free timing template. WITHIN level\
+    \ and genuinely so: both sides have seen the same ten seed episodes of the component, which is exactly\
+    \ the information-matching the generation study's withdrawn C4 lacked. These floor arms are the right\
+    \ controls HERE precisely because the labels are supplied to every arm, so tool and template are information-matched\
+    \ and the contrast is real (\xA71.2). Read with the tIoU endpoint-inflation caveat: a floor banks\
+    \ credit for the two forced episode endpoints too."
+- id: 8
+  dimension: tool
+  numerator: align_video
+  baseline: floor_uniform
+  level: labels_only
+  supervision_arm: labels_only
+  supervision_baseline: labels_only
+  cross_level: false
+  claim: A5
+  label: does the video help at all
+  description: 'A5 at the other end: does looking at the video beat splitting the episode into |L| equal
+    parts? Within level -- neither side has seen a seed episode. This is the row that prices every other
+    row in the study. On one dataset the prior control found median-ratio placement at 70.83% tIoU and
+    the uncorrected model at 70.65% -- statistically identical -- so the possibility that the VLM adds
+    nothing is live, not rhetorical, and it has never been tested on more than one component. The floor
+    must be anchored at the episode start for this to be a fair question at all (see external_arms).'
+notes_corpus_b: 'Same 8 contrasts and the same 24-test Holm family as alignment_v1, so Corpus A and Corpus
+  B contrasts are comparable. The cluster is the TASK: Corpus B is sharded into 39 components, one per
+  RoboInter task, precisely so aggregate.py''s bootstrap resamples tasks and not a single whole-corpus
+  unit. Corpus A had 16 clusters; Corpus B has 39.'
