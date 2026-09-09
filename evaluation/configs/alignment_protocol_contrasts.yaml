@@ -143,7 +143,7 @@ contrasts:
   description: Uncalibrated video versus uniform timing, with supplied labels for
     both.
 notes_corpus_b: 'Same 8 contrasts and the same 24-test Holm family as alignment_v1,
-  so Corpus A and Corpus B contrasts are comparable. The cluster is the TASK: Corpus
-  B is sharded into 39 components, one per RoboInter task, precisely so aggregate.py''s
-  bootstrap resamples tasks and not a single whole-corpus unit. Corpus A had 16 clusters;
-  Corpus B has 39.'
+  so Corpus A and Corpus B contrasts are comparable. The bootstrap cluster is the
+  semantic task, not the source component: Corpus A has 4 task clusters across 36
+  evaluation components, and Corpus B has 39 task clusters across 141 evaluation
+  components.'

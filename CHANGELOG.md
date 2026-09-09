@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A reproducible matched-frame audit compares official Qwen processor-expanded
+  visual-token counts for contact sheets and native video. The reviewed public
+  bundle includes aggregate results, per-trajectory derived measurements,
+  decoded-media validation receipts, figures, checksums, and explicit upstream
+  dataset terms.
 - `lerobot-align-fit` accepts the append-only `.jsonl` sidecar written by
   `lerobot-align-eval-batch` wherever it accepted the `--out` JSON array, so a
   scoring run that dies partway no longer has to be re-aggregated by hand.
@@ -26,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `probe_frame_tokens.py` now counts official processor-expanded visual
+  placeholders from `grid_thw` using the evaluation's 2 fps, 300-frame, and
+  224-pixel settings. It no longer compares modality-dependent vLLM
+  `usage.prompt_tokens` telemetry or uses the old 3 fps/336-pixel geometry.
 - `lerobot-align-eval-batch --out <name>.jsonl` derived a sidecar path equal to
   the output file, so the run appended rows to the file it then overwrote with
   the final array. The sidecar now falls back to `<name>.jsonl.rows.jsonl` in
@@ -34,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `JSONDecodeError`; it now names the file and, for the sidecar, the line, and
   rejects a row with no `episode` key instead of raising `KeyError`.
 
-## [0.1.0] - <RELEASE-DATE>
+## [0.1.0] - 2026-09-08
 
 First public release. There is no earlier release history; entries below
 describe the initial contents rather than changes against a predecessor.
@@ -55,4 +64,6 @@ describe the initial contents rather than changes against a predecessor.
   `lerobot-align-eval-batch`, `lerobot-motion-viz`.
 - Dispatch to Hugging Face Jobs via `--job.target`.
 - `evaluation/`: the pre-registered comparison against upstream
-  `lerobot-annotate`, its metric library, and the frozen results and reports.
+  `lerobot-annotate`, its metric library, and its reproduction protocol.
+  Historical accuracy result artifacts are intentionally excluded from the
+  public source export.

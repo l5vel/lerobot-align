@@ -93,7 +93,7 @@ EVAL_DIR="$(dirname "$HERE")"
 REPO_DIR="$(dirname "$EVAL_DIR")"
 PYTHON="${PYTHON:-$REPO_DIR/.venv/bin/python}"
 
-STORAGE="${EVAL_STORAGE:-/nfs/imports/collector_storage/peng/lerobot-align-eval}"
+STORAGE="${EVAL_STORAGE:-$REPO_DIR/.cache/lerobot-align-eval}"
 GT_DIR="$STORAGE/ground_truth"
 SPLIT_DIR="$STORAGE/splits"
 WORK_DIR="$STORAGE/work"
@@ -190,12 +190,11 @@ DISPATCH_PRED_DIR="$PRED_DIR"
 BASE_PORT="${QWEN38_BASE_PORT:-8000}"
 MODEL_ID="${QWEN38_SERVED_MODEL_NAME:-Qwen/Qwen3.8-27B}"
 
-# Corpus A: the 16 COMPONENT datasets that carry verified human ground truth.
-# NOT the 10 merged L5vel repos -- those are concatenations in which 14 of the
-# 32 components carry this tool's OWN generated labels, and the merged repos
-# ship no `meta/lerobot_annotations.json` at all. See evaluation_plan.md §3.1.
-# All 16 are already on local disk; nothing is downloaded for Corpus A.
-SOURCE_DIR="${EVAL_SOURCE_DIR:-/nfs/imports/collector_storage/peng/annotate_work}"
+# Corpus A: the 16 source components that carry the imported reference layer.
+# Do not substitute the 10 merged L5vel repositories: they combine imported
+# reference and generated components and do not publish the historical source
+# annotation sidecars used by this driver. See the immutable source manifest.
+SOURCE_DIR="${EVAL_SOURCE_DIR:-$REPO_DIR/.cache/corpus-a-sources}"
 
 DATASETS=(
     base4-clean-table-01-BC-FV-v30

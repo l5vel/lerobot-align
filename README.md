@@ -473,9 +473,11 @@ The source release includes the metric library, evaluation harness and shared
 [calibration protocol](evaluation/calibration_protocol.md). Start with the
 [reproduction guide](evaluation/REPRODUCING.md) for installation, authorized
 input preparation, configuration and the limits of historical reproduction.
-Historical result artifacts, private inputs and engineering notes are excluded
+Historical accuracy artifacts, private inputs and engineering notes are excluded
 from the clean source export. Their absence is intentional; the software license
-does not grant redistribution rights to the original datasets.
+does not grant redistribution rights to the original datasets. The reviewed
+matched-frame visual-token evidence is public under
+[`evaluation/public_artifacts/`](evaluation/public_artifacts/README.md).
 
 ### What the numbers actually say
 
@@ -502,9 +504,9 @@ competing methods — but the headline gains have to be read against them.
 The head-to-head against upstream `lerobot-annotate` was measured on one corpus
 only: the corpus this package was developed against. That makes it a
 tuned-versus-untuned comparison in this package's favour. Every result is
-conditional on a single model (Qwen3.8-27B), and the ground truth is one
-annotator's judgement with no repeat annotation, so no score can be read as
-exceeding human agreement.
+conditional on a single served model alias (Qwen3.8-27B). Neither reference
+layer has an independent repeat-annotation agreement measurement, so no score
+can be read as exceeding human agreement.
 
 ---
 

@@ -1,6 +1,7 @@
 # Release readiness after implementation and integration checks
 
-Reviewed 2026-09-08. **Recommendation: Ready with minor fixes for the scoped
+Reviewed 2026-09-08; source-only publication follow-up reviewed 2026-09-09.
+**Recommendation: Ready with minor fixes for the scoped
 Linux source/package release, using the clean export only.** The historical
 study is still not independently reproducible, and hosted Jobs/Hub service
 qualification remains outstanding. Those limitations must remain explicit.
@@ -12,7 +13,11 @@ qualification, dependency boundaries, source export and the additional Jobs
 publication fix. Metadata/documentation follow-up `40351cb` verifies and pins
 all historical source revisions; application code is unchanged. Unrelated local
 notes are excluded from the release manifest.
-Nothing has been pushed, uploaded or published.
+At the original handoff, nothing had been pushed, uploaded or published. The
+clean source repository has since been connected to its public remote. The
+2026-09-09 follow-up adds only corrected processor-token diagnostics,
+reproduction documentation, tests and a reviewed evidence bundle; the original
+0.1.0 wheel and sdist were not rebuilt.
 
 ## 1. Release blockers
 
@@ -42,18 +47,23 @@ No source labels or timestamp arrays were restored. Nine additional structured
 artifacts remain redacted in the development archive. No redistribution rights
 were inferred; [NOTICE](NOTICE) preserves separate software and dataset terms.
 
-[export_release.py](scripts/export_release.py) reads only the 189 exact regular
+[export_release.py](scripts/export_release.py) reads only the 201 exact regular
 files named by [source-files.txt](release/source-files.txt) from a selected Git
 commit. It ignores working-tree changes and unlisted files, copies no Git objects,
-stages the complete export, and records SHA-256 hashes. Historical results,
-analysis documents and engineering notes are excluded. Regression tests cover
+stages the complete export, and records SHA-256 hashes. Historical accuracy
+results, analysis documents and engineering notes are excluded. The narrow
+`evaluation/public_artifacts/` bundle is separately reviewed and contains only
+matched-frame processor-token metadata, validation receipts and figures.
+Regression tests cover
 old deleted source material, tracked/untracked private files, symlinks, traversal,
 existing destinations and interrupted object reads.
 
 **Required publication action:** use the prepared clean repository or built
-source distribution. Never push this development branch's history. The clean
-repository must have one new root commit and no remote to the development tree;
-[release instructions](release/README.md) make that boundary repeatable.
+source distribution. Never push this development branch's history. For initial
+publication, initialize an export with one new root commit. For later source
+updates, commit only inside that already-clean repository and never fetch or
+merge development history; [release instructions](release/README.md) make that
+boundary repeatable.
 
 ### B4/B5/B6 — Integrity, transactions and executable onboarding: resolved
 
@@ -193,18 +203,20 @@ shard size as additional staging/backup space.
 
 Linux, Python 3.12.13, FFmpeg present. Final CPU reruns set `OMP_NUM_THREADS=2`;
 no paid service or third-party annotation data is needed by the test suites.
-The updated packages built successfully offline from cached build dependencies
-after a sandbox DNS restriction. The fresh wheel's full suite passed inside the
-sandbox; its HTTP smoke needed a separate run with localhost socket permission.
-The sdist checks use a separate fresh environment with that permission. All 187
-non-generated files in the rebuilt sdist match the reviewed allowlisted commit
-exactly. The new download snippets passed shell/embedded-Python syntax checks;
-the large dataset downloads themselves were not executed.
+During the original 0.1.0 package review, the packages built successfully
+offline from cached build dependencies after a sandbox DNS restriction. The
+then-fresh wheel's full suite passed inside the sandbox; its HTTP smoke needed a
+separate run with localhost socket permission. The original sdist checks used a
+separate fresh environment with that permission. All 187 non-generated files in
+that sdist match the reviewed allowlisted commit exactly. The new download
+snippets passed shell/embedded-Python syntax checks; the large dataset downloads
+themselves were not executed.
 
 | Check | Exact result |
 | --- | --- |
-| Full unit suite: `pytest -q tests -p no:cacheprovider` | **628 passed**, 10 warnings |
+| Full unit suite: `pytest -q tests -p no:cacheprovider` | **639 passed**, 10 warnings |
 | Full evaluation suite: `pytest -q evaluation -p no:cacheprovider` | **106 passed** |
+| Matched-frame processor-token audit | **11 passed**; strict replay recovered all **2,062/2,062** matched pairs, all with lower video-token counts, and the six-file public checksum manifest passed |
 | Anonymous historical source metadata verification | **17/17** exact revision matches, HTTP 200, public and ungated as reported by the Hub; complete file downloads not tested |
 | Source-identity regression and shared preparation checks | **18 passed**; the two new identity cases failed before the manifest update |
 | Full fresh installed-wheel suite, outside the checkout | **734 passed**, 10 warnings; all six console help commands passed |
@@ -219,7 +231,7 @@ the large dataset downloads themselves were not executed.
 | Lint | `ruff check src tests evaluation scripts/export_release.py` passed |
 | Shell checks | `bash -n` passed on all six tracked shell scripts; ShellCheck was not installed/run |
 | Whitespace | `git diff --check` passed |
-| Credential-pattern/content-boundary scan | No live credentials identified across 189 release-source files and both artifacts. Two file-level URL flags are the same synthetic `.invalid` test fixture in source and sdist; zero unresolved flags. No `.env`, evaluation result archives or source annotations in either package |
+| Credential-pattern/content-boundary scan | No live credentials identified across the 201 release-source files or unchanged distributions. The source-only follow-up contains no private absolute paths; two remaining `/nfs/` strings are synthetic test fixtures. The public token bundle contains no annotation text, source media, or annotation predictions/fits; its trivial `"1"` live-server completions and derived trajectory metadata are disclosed in its README. Two file-level URL flags in the original source/sdist scan are the same synthetic `.invalid` fixture; zero unresolved flags |
 | Final dependency audit | **6 findings across 5 packages**, one duplicate, 124 distributions inspected; unfiltered results retained, scoped assessment above |
 | Local Jobs installation prelude in exact Docker image | Strict `pip check`, all runtime imports and installed CLI help passed with the 259-distribution constraints |
 | Live GPU integration | **4 passed**: generation and fixed-label alignment, each with contact sheets and native video, using original synthetic MP4s |
@@ -241,8 +253,9 @@ The GPU serving check used the compatible CUDA stack in Docker. A pattern scan
 is not proof that arbitrary sensitive content is absent and does not clear old
 Git history for publication.
 
-Final artifacts (source/NOTICE follow-up `40351cb`, application code unchanged from
-`b57ac71`; this report is not inside the packages):
+Unchanged original 0.1.0 package artifacts (source/NOTICE follow-up `40351cb`,
+application code unchanged from `b57ac71`; these do not contain the 2026-09-09
+source-only follow-up):
 
 - `lerobot_align-0.1.0-py3-none-any.whl`: **57 files**, **209142 bytes**,
   SHA-256 `4dbb95598b5792f3846f122d91ffe19dc9e2490266b92668b7b90b706620ce91`.

@@ -32,6 +32,14 @@ evaluation/metrics/semantic.py
 evaluation/metrics/stats.py
 evaluation/metrics/test_harness_regressions.py
 evaluation/metrics/test_metrics.py
+evaluation/public_artifacts/README.md
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/README.md
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/artifact_checksums.sha256
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/figure3.png
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/figure3.svg
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/rows.jsonl
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/summary.json
+evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/validation.json
 evaluation/release_artifact_inventory.json
 evaluation/scripts/aggregate.py
 evaluation/scripts/align_floors.py
@@ -59,8 +67,10 @@ evaluation/scripts/make_examples.py
 evaluation/scripts/make_label_files.py
 evaluation/scripts/make_report.py
 evaluation/scripts/make_splits.py
+evaluation/scripts/measure_frame_format_tokens.py
 evaluation/scripts/merge_alignment_predictions.py
 evaluation/scripts/merge_corpus_b_predictions.py
+evaluation/scripts/plot_frame_format_tokens.py
 evaluation/scripts/preflight.py
 evaluation/scripts/prepare_alignment_study.py
 evaluation/scripts/prepare_dataset.py
@@ -84,6 +94,7 @@ evaluation/scripts/shard_corpus_b_by_task.py
 evaluation/scripts/summarize_corrections.py
 evaluation/scripts/test_harness.py
 evaluation/scripts/translate_corpus_b_splits.py
+evaluation/scripts/validate_frame_format_tokens.py
 evaluation/scripts/window_seams.py
 pyproject.toml
 release/README.md
@@ -170,6 +181,7 @@ tests/test_dependency_boundaries.py
 tests/test_eval_align_batch.py
 tests/test_evaluation_safety.py
 tests/test_fit_align_calibration.py
+tests/test_frame_format_tokens.py
 tests/test_frames.py
 tests/test_jobs.py
 tests/test_modules.py

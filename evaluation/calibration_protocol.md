@@ -66,8 +66,12 @@ need fresh fits and inference to compare performance under this protocol.
 
 `configs/alignment_protocol_arms.yaml` defines six VLM arms and three timing
 baselines. The preparer resolves its two camera roles into `arms.yaml`. Both
-corpora use temperature 0.2, 2 sampled frames/second, caps of 60/300 frames for
-contact sheets, 300 for video, and a minimum subtask duration of 1.5 seconds.
+corpora use temperature 0.2, 2 sampled frames/second, and caps of 60/300 frames
+for contact sheets and 300 for video. The shared configuration carries the
+1.5-second minimum-duration instruction used by generated-label prompts, but
+this fixed-label study supplies the labels and the alignment/calibration solver
+does not enforce that value; it optimizes boundaries on the 0.1-second grid
+described below.
 Native dataset FPS and camera resolution are preserved during preparation;
 common inference sampling and resizing are applied afterwards. Splitting a
 shared video shard may re-encode selected episodes with LeRobot's splitter.

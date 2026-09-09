@@ -16,8 +16,11 @@ uv run --no-sync python evaluation/scripts/prepare_alignment_study.py --help
 uv run --no-sync python evaluation/scripts/evaluate_alignment_study.py --help
 ```
 
-The full development extra includes evaluation dependencies. For an evaluation
-installation without development tools, use `uv sync --locked --extra eval`.
+The full development extra includes evaluation and processor dependencies. For
+an alignment-evaluation installation without development tools, use
+`uv sync --locked --extra eval`. The visual-token audit below additionally
+needs Transformers, so use `uv sync --locked --extra eval --extra serve` for
+that workflow.
 Set `LEROBOT_VLM_API_KEY` for an authenticated model endpoint; do not put keys
 in command lines, source manifests or result directories.
 
@@ -131,6 +134,78 @@ For the documented Qwen2.5/vLLM image, export
 `LEROBOT_VLM_VIDEO_METADATA_SOURCE=client` and
 `LEROBOT_OPENAI_SEND_MM_KWARGS=1` before evaluation. Use metadata source `server`
 for Qwen3-VL adapters. New evaluation fingerprints include this choice.
+
+## Matched-frame visual-token audit
+
+The frame-format audit uses the final prepared Corpus A and Corpus B study
+directories. It compares `align_sheet_300` with `align_video`: the same wrist
+timestamps at 2 fps, capped at 300 frames and encoded at 224 px wide. The
+primary measurement is the official Qwen processor's expanded visual-token
+count, `sum(product(grid_thw) / merge_size**2)`. It does not use vLLM's
+modality-dependent `usage.prompt_tokens` counter.
+
+The checked artifact used processor revision
+`1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`. Download the six processor files
+explicitly; this avoids selecting any model-weight shard and pins the content by
+revision. The directory is about 12.8 MB.
+
+```bash
+export ALIGN_QWEN_REV=1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+export ALIGN_QWEN_PROCESSOR="$PWD/.cache/qwen38-processor-$ALIGN_QWEN_REV"
+uv run --no-sync hf download Qwen/Qwen3.8-27B \
+  config.json preprocessor_config.json video_preprocessor_config.json \
+  tokenizer_config.json tokenizer.json chat_template.jinja \
+  --revision "$ALIGN_QWEN_REV" --local-dir "$ALIGN_QWEN_PROCESSOR"
+```
+
+Run the complete metadata census first:
+
+```bash
+uv run --no-sync python evaluation/scripts/measure_frame_format_tokens.py \
+  "$PREPARED_CORPUS_A" "$PREPARED_CORPUS_B" \
+  --processor "$ALIGN_QWEN_PROCESSOR" --local-files-only \
+  --rows-out rows.jsonl --summary-out summary.json
+```
+
+Then decode deterministic length-quantile pairs and verify that their real
+processor grids match the census. The live endpoint arguments are optional;
+when present they prove that both payload formats complete on the recorded GPU.
+
+```bash
+uv run --no-sync python evaluation/scripts/validate_frame_format_tokens.py \
+  --rows rows.jsonl \
+  --corpus-root "corpus_a=$PREPARED_CORPUS_A" \
+  --corpus-root "corpus_b=$PREPARED_CORPUS_B" \
+  --processor "$ALIGN_QWEN_PROCESSOR" --local-files-only \
+  --pairs-per-corpus 3 \
+  --out validation.json
+```
+
+To add the optional live-server completion check, append
+`--api-base http://127.0.0.1:8000/v1 --model Qwen/Qwen3.8-27B --gpu-index 3`.
+The GPU index records `nvidia-smi` provenance; keep the server launch log to
+establish its model revision, dtype, launch arguments, and device mapping.
+
+Re-run the census with `--actual-pairs validation.json` so the validation hash
+is pinned in its summary, then render the figure:
+
+```bash
+uv run --no-sync python evaluation/scripts/measure_frame_format_tokens.py \
+  "$PREPARED_CORPUS_A" "$PREPARED_CORPUS_B" \
+  --processor "$ALIGN_QWEN_PROCESSOR" --local-files-only \
+  --rows-out rows.jsonl --summary-out summary.json \
+  --actual-pairs validation.json
+
+uv run --no-sync python evaluation/scripts/plot_frame_format_tokens.py \
+  --rows rows.jsonl --summary summary.json \
+  --svg figure3.svg --png figure3.png
+```
+
+The plotter refuses publication unless every row is valid and matched-frame,
+the population and saved aggregates reconcile, decoded examples cover both
+corpora, and each corpus has positive ratio-of-sums, mean-pair, and median-pair
+visual-token reductions. The checked run and its checksums are under
+`evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/`.
 
 The legacy `run_all.sh` is a site-specific historical driver. The shared Python
 drivers above are the supported entry point for a new evaluation.
