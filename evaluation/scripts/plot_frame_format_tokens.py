@@ -418,6 +418,14 @@ def _format_token_tick(value: float, _position: float) -> str:
     return f"{value:,.0f}"
 
 
+def _format_compact_tokens(value: int) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}K"
+    return f"{value:,}"
+
+
 def _write_accessible_svg(path: Path, title: str, description: str) -> None:
     text = path.read_text(encoding="utf-8")
     match = re.search(r"<svg\b[^>]*>", text)
@@ -477,8 +485,9 @@ def _render(
     )
     description = (
         "A log-scale paired scatter compares contact-sheet and native-video visual tokens for "
-        f"{count:,} held-out trajectories. A second panel reports the ratio-of-sums token "
-        "reduction for Corpus A, Corpus B, and both corpora pooled."
+        f"{count:,} held-out trajectories. A second panel compares normalized bars for summed "
+        "contact-sheet and native-video workloads in Corpus A, Corpus B, and both corpora "
+        "pooled, with absolute totals and ratio-of-sums reductions labeled."
     )
 
     plt.rcParams.update(
@@ -493,7 +502,7 @@ def _render(
         }
     )
     figure = plt.figure(figsize=(9, 5.6), dpi=100, facecolor="white")
-    grid = figure.add_gridspec(1, 2, width_ratios=(1.45, 1), wspace=0.36)
+    grid = figure.add_gridspec(1, 2, width_ratios=(1.35, 1.15), wspace=0.33)
     scatter_axis = figure.add_subplot(grid[0, 0])
     summary_axis = figure.add_subplot(grid[0, 1])
 
@@ -572,42 +581,75 @@ def _render(
     for text in legend.get_texts():
         text.set_color("#475569")
 
-    summary_axis.set_title("Workload token reduction", loc="left", fontsize=11, fontweight="bold")
+    summary_axis.set_title(
+        "Aggregate visual-token workload", loc="left", fontsize=11, fontweight="bold"
+    )
     names = ("corpus_a", "corpus_b", "all")
     y_positions = (2, 1, 0)
-    reductions = [100 * derived[name]["video_reduction_fraction"] for name in names]
-    maximum = max(reductions)
-    x_max = min(100.0, max(10.0, math.ceil((maximum + 12.0) / 10.0) * 10.0))
+    bar_offset = 0.18
+    bar_height = 0.22
     summary_axis.axvline(0, color="#475569", linewidth=1.0)
-    for name, y, reduction in zip(names, y_positions, reductions, strict=True):
-        color = COLORS[name]
-        summary_axis.hlines(y, 0, reduction, color=color, alpha=0.22, linewidth=8)
-        summary_axis.scatter([reduction], [y], color=color, s=58, zorder=3)
+    for name, y in zip(names, y_positions, strict=True):
         stats = derived[name]
+        sheet_total = int(stats["contact_sheet_visual_tokens"])
+        video_total = int(stats["video_visual_tokens"])
+        video_percent = 100 * video_total / sheet_total
+        reduction = 100 - video_percent
+        summary_axis.barh(
+            y + bar_offset,
+            100,
+            height=bar_height,
+            color="#e2e8f0",
+            edgecolor="#64748b",
+            linewidth=0.9,
+            hatch="///",
+            zorder=2,
+        )
+        summary_axis.barh(
+            y - bar_offset,
+            video_percent,
+            height=bar_height,
+            color=COLORS[name],
+            edgecolor=COLORS[name],
+            linewidth=0.9,
+            zorder=3,
+        )
         summary_axis.text(
-            reduction,
-            y + 0.15,
-            f"{reduction:.1f}%",
+            97.5,
+            y + bar_offset,
+            f"Sheets {_format_compact_tokens(sheet_total)}",
             color=INK,
-            fontsize=10,
+            fontsize=7.7,
+            fontweight="bold",
+            ha="right",
+            va="center",
+        )
+        summary_axis.text(
+            video_percent - 2.2,
+            y - bar_offset,
+            f"Video {_format_compact_tokens(video_total)}",
+            color="white",
+            fontsize=7.7,
+            fontweight="bold",
+            ha="right",
+            va="center",
+        )
+        summary_axis.text(
+            (video_percent + 100) / 2,
+            y,
+            f"{reduction:.1f}% fewer",
+            color=INK,
+            fontsize=7.8,
             fontweight="bold",
             ha="center",
             va="center",
         )
-        summary_axis.text(
-            reduction,
-            y - 0.17,
-            f"{stats['video_lower_pairs']:,}/{stats['n_episodes']:,} lower",
-            color=MUTED,
-            fontsize=7.8,
-            ha="center",
-            va="center",
-        )
-    summary_axis.set_yticks(y_positions, ("Corpus A", "Corpus B", "Pooled"))
-    summary_axis.set_xlim(0, x_max)
-    summary_axis.set_ylim(-0.55, 2.55)
-    summary_axis.set_xlabel("Fewer visual tokens · ratio of sums (%)")
+    summary_axis.set_yticks(y_positions, ("Corpus A", "Corpus B", "Pooled\n(A+B)"))
+    summary_axis.set_xlim(0, 108)
+    summary_axis.set_ylim(-0.48, 2.48)
+    summary_axis.set_xlabel("Relative visual tokens · contact sheets = 100%")
     summary_axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _pos: f"{value:.0f}%"))
+    summary_axis.set_xticks((0, 25, 50, 75, 100))
     summary_axis.grid(axis="x", color=GRID, linewidth=0.8)
     summary_axis.spines[["top", "right", "left"]].set_visible(False)
     summary_axis.tick_params(axis="y", length=0)

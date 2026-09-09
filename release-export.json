@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "766853d0bf77ee94b3d31f4a26fcc55c71aece44",
+  "source_commit": "fc7feb26f403934a62bf06ec27aa0bd9884083b1",
   "inherited_git_history": false,
   "files": [
     {
@@ -180,23 +180,23 @@
     },
     {
       "path": "evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/README.md",
-      "size": 3473,
-      "sha256": "349c7ebc4b1f5831238ef1785222ab78cdc7f4902f39d6cb0d19d7417c432edc"
+      "size": 3611,
+      "sha256": "dea7d1059c95684670b58265406b1c8045253d869fff97f53882af56bc25b0da"
     },
     {
       "path": "evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/artifact_checksums.sha256",
       "size": 470,
-      "sha256": "ab17effa13e66576d777101cfbfed8027f1c642d7628052676e145158ea3f630"
+      "sha256": "25c6092abbe0216244d3af49afde0c092f0121c605ccdd76a848006511b859c5"
     },
     {
       "path": "evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/figure3.png",
-      "size": 88908,
-      "sha256": "c533bf919249a9388ff34246c407c83f3ba3cb110f50114cb08705e9a273f748"
+      "size": 97778,
+      "sha256": "6d858100c8503dcafce9cd882acd38ed5211f3fa786ce423bcb2dec0b4b274ab"
     },
     {
       "path": "evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/figure3.svg",
-      "size": 359510,
-      "sha256": "92eef43745ea74ab8dc20f5cdacd5080c1260f172dc21732abe8ef1eb5ede8e8"
+      "size": 360591,
+      "sha256": "f959dcb14a67fb0c9213d781756f4e5d81e373d8dc8be066a9303cd9b678f2bc"
     },
     {
       "path": "evaluation/public_artifacts/frame_format_tokens/qwen38_27b/2026-09-09/rows.jsonl",
@@ -365,8 +365,8 @@
     },
     {
       "path": "evaluation/scripts/plot_frame_format_tokens.py",
-      "size": 28624,
-      "sha256": "f3eade6143b51f7ceb4206a3f2878d5abce7b5e8ddafe87252c9cc812a3e8d8e"
+      "size": 29685,
+      "sha256": "d0694ed35796426df15409a4aa994b3ff3e143cefb4a259c4235c10484fb6c9c"
     },
     {
       "path": "evaluation/scripts/preflight.py",

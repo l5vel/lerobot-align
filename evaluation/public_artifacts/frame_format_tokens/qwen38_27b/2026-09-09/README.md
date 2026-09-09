@@ -45,7 +45,9 @@ Artifacts:
 - `summary.json`: population audits, aggregates, input hashes, processor config,
   model revision, and decoded-pair validation checksum.
 - `validation.json`: six decoded-media checks and twelve GPU3 inference checks.
-- `figure3.svg` and `figure3.png`: figure derived entirely from `rows.jsonl`.
+- `figure3.svg` and `figure3.png`: paired per-trajectory scatter plus normalized
+  aggregate contact-sheet/video bars, labeled with absolute totals and
+  ratio-of-sums reductions; derived entirely from `rows.jsonl`.
 
 The scripts refuse invalid or unmatched rows. The plotter also refuses to emit
 Figure 3 unless both corpora have positive ratio-of-sums, mean-pair, and
